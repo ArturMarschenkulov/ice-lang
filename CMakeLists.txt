@@ -20,7 +20,6 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 # add the executable
 add_executable(${PROJECT_NAME} 
     main.cpp
-    Token.cpp
 )
 
 # execute_process(COMMAND llvm-config --libs core support
