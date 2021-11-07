@@ -1,8 +1,10 @@
 #pragma once
+
+#include "Token.h"
+
+#include <map>
 #include <string>
 #include <vector>
-#include "Token.h"
-#include <map>
 
 class CharCursor {
 public:

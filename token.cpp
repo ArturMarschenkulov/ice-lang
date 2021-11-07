@@ -19,15 +19,16 @@ auto to_string(TOKEN_TYPE token_type) -> std::string {
 	case TOKEN_TYPE::P_LEFT_BRACE: return "P_LEFT_BRACE"; break;
 	case TOKEN_TYPE::P_RIGHT_BRACE: return "P_RIGHT_BRACE"; break;
 
-	case TOKEN_TYPE::P_MINUS_GREATER: return "P_MINUS_GREATER"; break;
-	case TOKEN_TYPE::P_EQUAL_GREATER: return "P_EQUAL_GREATER"; break;
+	// case TOKEN_TYPE::P_MINUS_GREATER: return "P_MINUS_GREATER"; break;
+	// case TOKEN_TYPE::P_EQUAL_GREATER: return "P_EQUAL_GREATER"; break;
+	// case TOKEN_TYPE::P_EQUAL_EQUAL: return "P_EQUAL_EQUAL"; break;
+	// case TOKEN_TYPE::P_BANG_EQUAL: return "P_BANG_EQUAL"; break;
+	// case TOKEN_TYPE::P_PIPE_PIPE: return "P_PIPE_PIPE"; break;
 
 	case TOKEN_TYPE::P_EQUAL: return "P_EQUAL"; break;
-	case TOKEN_TYPE::P_EQUAL_EQUAL: return "P_EQUAL_EQUAL"; break;
-	case TOKEN_TYPE::P_BANG_EQUAL: return "P_BANG_EQUAL"; break;
+
 	case TOKEN_TYPE::P_BANG: return "P_BANG"; break;
 	case TOKEN_TYPE::P_PIPE: return "P_PIPE"; break;
-	case TOKEN_TYPE::P_PIPE_PIPE: return "P_PIPE_PIPE"; break;
 
 
 

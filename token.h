@@ -34,16 +34,17 @@ enum class TOKEN_TYPE {
 	P_LEFT_BRACE,	 // {
 	P_RIGHT_BRACE,	 // }
 
-	//PUNCTUATORS TWO
-	P_COLON_COLON, // ::
-	P_EQUAL_EQUAL, // ==
-	P_BANG_EQUAL, // !=
-	P_GREATER_EQUAL, // >=
-	P_LESS_EQUAL, // <=
-	P_AMPERSAND_AMPERSAND, // &&
-	P_PIPE_PIPE, // ||
-	P_MINUS_GREATER, // ->
-	P_EQUAL_GREATER, // =>
+	//TODO: Probably remove
+	// //PUNCTUATORS TWO
+	// P_COLON_COLON, // ::
+	// P_EQUAL_EQUAL, // ==
+	// P_BANG_EQUAL, // !=
+	// P_GREATER_EQUAL, // >=
+	// P_LESS_EQUAL, // <=
+	// P_AMPERSAND_AMPERSAND, // &&
+	// P_PIPE_PIPE, // ||
+	// P_MINUS_GREATER, // ->
+	// P_EQUAL_GREATER, // =>
 
 	//KEYWORDS
 	KW_VAR,
