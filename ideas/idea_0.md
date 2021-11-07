@@ -77,4 +77,18 @@ fn main(): () {
     var res_2 = pow(exp: 2, base: 5);
 }
 ```
+## Operator overloading and custom operators
+
+```
+fn + (i32 x, i32 y) -> i32 {
+    __add(x, y);
+}
+```
+
+```
+fn <*> (i32 x, i32 y) -> i32 {
+
+    
+}
+```
 

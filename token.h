@@ -14,6 +14,7 @@ enum class TOKEN_TYPE {
 	P_BANG, // !
 	P_GREATER, // >
 	P_LESS, // <
+	P_DOT, // .
 	P_COMMA,// ,
 	P_PLUS,	// +
 	P_MINUS,// -
@@ -55,9 +56,11 @@ enum class TOKEN_TYPE {
 	KW_F8, KW_F16, KW_F32, KW_F64, KW_F128,
 
 	//LITERAL
-	L_NUMBER,
 	L_TRUE,
 	L_FALSE,
+	L_NUMBER,
+	L_CHAR,
+	L_STRING,
 	L_IDENTIFIER,
 
 
@@ -71,13 +74,22 @@ enum class TOKEN_TYPE {
 	SKW_PRINT,
 };
 
-using IceObject = std::variant<int, bool, std::monostate>;
+struct Location {
+	int line;
+	int column;
+};
+struct Span {
+	Location start;
+	Location end;
+};
+//using IceObject = std::variant<int, bool, std::monostate>;
 class Token {
 public:
 	TOKEN_TYPE type = TOKEN_TYPE::SKW_UNKNOWN;
 	std::string lexeme = "DEBUG: THE LEXEME OF A TOKEN WAS UNTOUCHED. THIS SHOULDN'T BE!";
-	IceObject literal = std::monostate();
-	int line = 1;
+	//IceObject literal = std::monostate();
+	Span span;
+	//int line = 1;
 };
 auto to_string(TOKEN_TYPE token_type) -> std::string;
 auto operator<<(std::ostream& ost, const Token& token) -> std::ostream&;

@@ -55,6 +55,9 @@ auto to_string(TOKEN_TYPE token_type) -> std::string {
 }
 
 auto operator<<(std::ostream& ost, const Token& token) -> std::ostream& {
-	ost << to_string(token.type) << " [" << token.lexeme << "]";
+	ost << to_string(token.type) 
+	<< " [ " << token.lexeme << " ]" << " "
+	<< "(" << token.span.start.line << ":" << token.span.start.column 
+	<< "-" << token.span.end.line << ":" << token.span.end.column <<  ")";
 	return ost;
 }
