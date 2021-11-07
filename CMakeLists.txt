@@ -27,6 +27,7 @@ add_executable(${PROJECT_NAME}
     ice_lang.cpp
     tokenizer.cpp
     token.cpp
+    parser.cpp
 )
 
 # execute_process(COMMAND llvm-config --libs core support

@@ -86,9 +86,30 @@ fn + (i32 x, i32 y) -> i32 {
 ```
 
 ```
-fn <*> (i32 x, i32 y) -> i32 {
+postfix
+infix
+suffix
+circumfix?
 
-    
+in swift
+
+precedence group
+
+11 _ BitwiseShiftPrecedence
+10 l MultiplicationPrecedence 
+09 l AdditionPrecedence
+08 _ RangeFormationPrecedence
+07 l CastingPrecedence
+06 r NilCoalescingPrecedence
+05 _ ComparisonPrecedence
+04 l LogicalConjunctionPrecedence 
+03 l LogicalDisjunctionPrecedence 
+02 r TernaryPrecedence 
+01 r AssignmentPrecedence 
+
+fn<*> postfix (i32 x, i32 y) -> i32 {
+
+
 }
 ```
 

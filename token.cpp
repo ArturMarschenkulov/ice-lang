@@ -1,7 +1,7 @@
 #include "Token.h"
 #include <iostream>
 
-auto to_string(TOKEN_TYPE token_type) -> std::string {
+static auto to_string(TOKEN_TYPE token_type) -> std::string {
 	switch (token_type) {
 
 	case TOKEN_TYPE::P_COMMA: return "P_COMMA"; break;

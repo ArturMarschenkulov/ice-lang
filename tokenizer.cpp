@@ -1,5 +1,6 @@
 #include "tokenizer.h"
 #include <iostream>
+#include <cassert>
 
 static auto is_digit(const char c) -> bool {
 	return c >= '0' && c <= '9';
@@ -50,18 +51,14 @@ Tokenizer::Tokenizer() {
 }
 
 auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vector<Token> {
-	// m_start_cursor = source;
-	// m_current_cursor = source;
-	std::vector<Token> tokens;
 
-	
+	std::vector<Token> tokens;	
 	CharCursor start_cursor = { source };
 	CharCursor current_cursor = start_cursor;
 
 	while (current_cursor.peek(0) != '\0') {
 		start_cursor = current_cursor;
 		const Token token = scan_token(current_cursor.peek(0), start_cursor, current_cursor);
-
 
 
 		//if (is_skip_token(token) == false) 
@@ -164,6 +161,7 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 
 }
 auto Tokenizer::lex_number(CharCursor& current_cursor) const -> const TOKEN_TYPE {
+	//TODO: Add floating point support
 	auto (*func)(char) = is_digit;
 
 	if (current_cursor.peek(0) == '0') {
@@ -182,14 +180,7 @@ auto Tokenizer::lex_number(CharCursor& current_cursor) const -> const TOKEN_TYPE
 	return TOKEN_TYPE::L_NUMBER;
 }
 auto Tokenizer::lex_identifier(CharCursor& current_cursor) const -> const TOKEN_TYPE {
-
-	//while (is_alpha_numeric(current_cursor.peek(1))) {
-	//	current_cursor.advance();
-	//}
-	//std::string text(start_cursor.get(), current_cursor.get() + 1);
-
-
-	auto prev_cursor = current_cursor;
+	const CharCursor prev_cursor = current_cursor;
 	while (is_alpha_numeric(current_cursor.peek(1))) {
 		current_cursor.advance();
 	}
@@ -225,12 +216,46 @@ static auto process_number(const std::string& literal) -> std::pair<std::string,
 	}
 	return {number, base};
 }
+static auto is_lone_escape_string(const std::string& str) -> bool {
+	bool result = false;
+	if(str.size() == 1) {
+		char c = str[0];
+		switch(c) {
+			case '\n': 
+			case '\t': 
+			case '\r': result = true; break;
+			default: result = false; break;
+		}
+	} else {
+		result = false;
+	}
+	return result;
+}
+static auto escape_if_escape_string(const std::string& str) -> std::string {
+	std::string result;
+	bool is_escape = is_lone_escape_string(str);
+	if(is_escape == true) {
+		if(str == "\n") {
+			result = "\\n";
+		} else if(str == "\t") {
+			result = "\\t";
+		} else if(str == "\r") {
+			result = "\\r";
+		} else {
+			
+			assert(false, "not yet implemented");
+		}
+	} else {
+		result = str;
+	}
+	return result;
+}
 auto Tokenizer::create_token_from_type(const TOKEN_TYPE type, CharCursor& start_cursor, CharCursor& current_cursor) const -> const Token {
 	Token token;
 	std::string lexeme(start_cursor.get(), current_cursor.get() + 1);
-	if(lexeme == "\n") {
-		lexeme = "\\n";
-	}
+
+
+	lexeme = escape_if_escape_string(lexeme);
 
 	if (type == TOKEN_TYPE::L_NUMBER) {
 		auto [number, base] = process_number(lexeme);
@@ -241,9 +266,6 @@ auto Tokenizer::create_token_from_type(const TOKEN_TYPE type, CharCursor& start_
 		.end = current_cursor.m_loc,
 	};
 	token = Token{ type, lexeme, span };
-	// if(type == TOKEN_TYPE::SKW_NEWLINE) {
-	// 	current_cursor.new_line();
-	// }
 	return token;
 }
 

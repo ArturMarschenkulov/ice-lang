@@ -87,9 +87,7 @@ class Token {
 public:
 	TOKEN_TYPE type = TOKEN_TYPE::SKW_UNKNOWN;
 	std::string lexeme = "DEBUG: THE LEXEME OF A TOKEN WAS UNTOUCHED. THIS SHOULDN'T BE!";
-	//IceObject literal = std::monostate();
 	Span span;
-	//int line = 1;
 };
-auto to_string(TOKEN_TYPE token_type) -> std::string;
+//auto to_string(TOKEN_TYPE token_type) -> std::string;
 auto operator<<(std::ostream& ost, const Token& token) -> std::ostream&;
