@@ -23,9 +23,9 @@ static auto is_alpha_numeric(const char c) -> bool {
 
 static auto is_skip_token(const Token& token) -> bool {
 	switch (token.type) {
-		case TOKEN_TYPE::SKW_WHITESPACE:
-		case TOKEN_TYPE::SKW_NEWLINE:
-		case TOKEN_TYPE::SKW_COMMENT: return true;
+		case Token::TYPE::SKW_WHITESPACE:
+		case Token::TYPE::SKW_NEWLINE:
+		case Token::TYPE::SKW_COMMENT: return true;
 		default: return false;
 	}
 }
@@ -38,14 +38,14 @@ enum class BASE {
 
 Tokenizer::Tokenizer() {
 
-	m_keyword_map["func"] = TOKEN_TYPE::KW_FUNC;
-	m_keyword_map["return"] = TOKEN_TYPE::KW_RETURN;
-	m_keyword_map["var"] = TOKEN_TYPE::KW_VAR;
+	m_keyword_map["func"] = Token::TYPE::KW_FUNC;
+	m_keyword_map["return"] = Token::TYPE::KW_RETURN;
+	m_keyword_map["var"] = Token::TYPE::KW_VAR;
 
-	m_keyword_map["true"] = TOKEN_TYPE::L_TRUE;
-	m_keyword_map["false"] = TOKEN_TYPE::L_FALSE;
+	m_keyword_map["true"] = Token::TYPE::L_TRUE;
+	m_keyword_map["false"] = Token::TYPE::L_FALSE;
 
-	m_keyword_map["print"] = TOKEN_TYPE::SKW_PRINT;
+	m_keyword_map["print"] = Token::TYPE::SKW_PRINT;
 
 
 }
@@ -64,14 +64,14 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 		//if (is_skip_token(token) == false) 
 		{
 			if(tokens.size() > 0 
-				&& tokens[tokens.size() - 1].type == TOKEN_TYPE::SKW_WHITESPACE
-				&& token.type == TOKEN_TYPE::SKW_WHITESPACE) {
+				&& tokens[tokens.size() - 1].type == Token::TYPE::SKW_WHITESPACE
+				&& token.type == Token::TYPE::SKW_WHITESPACE) {
 				tokens[tokens.size() - 1].span.end = token.span.end;
 			} else {
 				tokens.push_back(token);
 			}
 		}
-		if(token.type == TOKEN_TYPE::SKW_NEWLINE) {
+		if(token.type == Token::TYPE::SKW_NEWLINE) {
 			current_cursor.new_line();
 			current_cursor.advance();
 		} else {
@@ -79,23 +79,23 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 		}
 	}
 	start_cursor.advance();
-	tokens.push_back(create_token_from_type(TOKEN_TYPE::SKW_EOF, start_cursor, current_cursor));
+	tokens.push_back(create_token_from_type(Token::TYPE::SKW_EOF, start_cursor, current_cursor));
 	return tokens;
 }
 
 auto Tokenizer::scan_token(const char c, CharCursor& start_cursor, CharCursor& current_cursor) const -> const Token {
-	const TOKEN_TYPE token_type = determine_token_type(c, current_cursor);
+	const Token::TYPE token_type = determine_token_type(c, current_cursor);
 	const Token token = create_token_from_type(token_type, start_cursor, current_cursor);
 	return token;
 }
 
 
-auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) const -> const TOKEN_TYPE {
-	TOKEN_TYPE token_type;
+auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) const -> const Token::TYPE {
+	Token::TYPE token_type;
 	switch (c) {
-		case '+': token_type = TOKEN_TYPE::P_PLUS; break;
-		case '-': token_type = TOKEN_TYPE::P_MINUS; break;
-		case '*': token_type = TOKEN_TYPE::P_STAR; break;
+		case '+': token_type = Token::TYPE::P_PLUS; break;
+		case '-': token_type = Token::TYPE::P_MINUS; break;
+		case '*': token_type = Token::TYPE::P_STAR; break;
 		case '/':
 		{
 			if (current_cursor.peek(1) == '/') {
@@ -103,7 +103,7 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 				while (current_cursor.peek(1) != '\n' && current_cursor.peek(1) != '\0') {
 					current_cursor.advance();
 				}
-				token_type = TOKEN_TYPE::SKW_COMMENT;
+				token_type = Token::TYPE::SKW_COMMENT;
 			} else if (current_cursor.peek(1) == '*') {
 				current_cursor.advance();
 				while (current_cursor.peek(1) != '*' && current_cursor.peek(2) != '/') {
@@ -111,39 +111,39 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 				}
 				current_cursor.advance();
 				current_cursor.advance();
-				token_type = TOKEN_TYPE::SKW_COMMENT;
+				token_type = Token::TYPE::SKW_COMMENT;
 			} else {
-				token_type = TOKEN_TYPE::P_SLASH;
+				token_type = Token::TYPE::P_SLASH;
 			}
 		}break;
-		case '&': token_type = TOKEN_TYPE::P_AMPERSAND; break;
-		case '!': token_type = TOKEN_TYPE::P_BANG; break;
-		case '|': token_type = TOKEN_TYPE::P_PIPE; break;
-		case '=': token_type = TOKEN_TYPE::P_EQUAL; break;
-		case '<': token_type = TOKEN_TYPE::P_LESS; break;
-		case '>': token_type = TOKEN_TYPE::P_GREATER; break;
-		case '.': token_type = TOKEN_TYPE::P_DOT; break;
-		case ',': token_type = TOKEN_TYPE::P_COMMA; break;
-		case ':': token_type = TOKEN_TYPE::P_COLON; break;
-		case ';': token_type = TOKEN_TYPE::P_SEMICOLON; break;
+		case '&': token_type = Token::TYPE::P_AMPERSAND; break;
+		case '!': token_type = Token::TYPE::P_BANG; break;
+		case '|': token_type = Token::TYPE::P_PIPE; break;
+		case '=': token_type = Token::TYPE::P_EQUAL; break;
+		case '<': token_type = Token::TYPE::P_LESS; break;
+		case '>': token_type = Token::TYPE::P_GREATER; break;
+		case '.': token_type = Token::TYPE::P_DOT; break;
+		case ',': token_type = Token::TYPE::P_COMMA; break;
+		case ':': token_type = Token::TYPE::P_COLON; break;
+		case ';': token_type = Token::TYPE::P_SEMICOLON; break;
 
-		case '#': token_type = TOKEN_TYPE::P_HASH; break;
-		case '?': token_type = TOKEN_TYPE::P_QUESTION; break;
-		case '@': token_type = TOKEN_TYPE::P_AT; break;
-		case '$': token_type = TOKEN_TYPE::P_DOLLAR; break;
-		case '~': token_type = TOKEN_TYPE::P_TILDE; break;
+		case '#': token_type = Token::TYPE::P_HASH; break;
+		case '?': token_type = Token::TYPE::P_QUESTION; break;
+		case '@': token_type = Token::TYPE::P_AT; break;
+		case '$': token_type = Token::TYPE::P_DOLLAR; break;
+		case '~': token_type = Token::TYPE::P_TILDE; break;
 
-		case '(': token_type = TOKEN_TYPE::P_LEFT_PAREN; break;
-		case ')': token_type = TOKEN_TYPE::P_RIGHT_PAREN; break;
-		case '[': token_type = TOKEN_TYPE::P_LEFT_BRACKET; break;
-		case ']': token_type = TOKEN_TYPE::P_RIGHT_BRACKET; break;
-		case '{': token_type = TOKEN_TYPE::P_LEFT_BRACE; break;
-		case '}': token_type = TOKEN_TYPE::P_RIGHT_BRACE; break;
+		case '(': token_type = Token::TYPE::P_LEFT_PAREN; break;
+		case ')': token_type = Token::TYPE::P_RIGHT_PAREN; break;
+		case '[': token_type = Token::TYPE::P_LEFT_BRACKET; break;
+		case ']': token_type = Token::TYPE::P_RIGHT_BRACKET; break;
+		case '{': token_type = Token::TYPE::P_LEFT_BRACE; break;
+		case '}': token_type = Token::TYPE::P_RIGHT_BRACE; break;
 
 		case ' ':
 		case '\r':
-		case '\t': token_type = TOKEN_TYPE::SKW_WHITESPACE; break;
-		case '\n': token_type = TOKEN_TYPE::SKW_NEWLINE; break;
+		case '\t': token_type = Token::TYPE::SKW_WHITESPACE; break;
+		case '\n': token_type = Token::TYPE::SKW_NEWLINE; break;
 
 		default:
 		{
@@ -152,7 +152,7 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 			} else if (is_alpha(c)) {
 				token_type = lex_identifier(current_cursor);
 			} else {
-				token_type = TOKEN_TYPE::SKW_UNKNOWN;
+				token_type = Token::TYPE::SKW_UNKNOWN;
 			}
 
 		}break;
@@ -160,7 +160,7 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 	return token_type;
 
 }
-auto Tokenizer::lex_number(CharCursor& current_cursor) const -> const TOKEN_TYPE {
+auto Tokenizer::lex_number(CharCursor& current_cursor) const -> const Token::TYPE {
 	//TODO: Add floating point support
 	auto (*func)(char) = is_digit;
 
@@ -177,9 +177,9 @@ auto Tokenizer::lex_number(CharCursor& current_cursor) const -> const TOKEN_TYPE
 	while (func(current_cursor.peek(1))) {
 		current_cursor.advance();
 	}
-	return TOKEN_TYPE::L_NUMBER;
+	return Token::TYPE::L_NUMBER;
 }
-auto Tokenizer::lex_identifier(CharCursor& current_cursor) const -> const TOKEN_TYPE {
+auto Tokenizer::lex_identifier(CharCursor& current_cursor) const -> const Token::TYPE {
 	const CharCursor prev_cursor = current_cursor;
 	while (is_alpha_numeric(current_cursor.peek(1))) {
 		current_cursor.advance();
@@ -187,9 +187,9 @@ auto Tokenizer::lex_identifier(CharCursor& current_cursor) const -> const TOKEN_
 	std::string text(prev_cursor.get(), current_cursor.get() + 1);
 
 	//determine whether identifier is a keyword
-	TOKEN_TYPE token_type;
+	Token::TYPE token_type;
 	if (m_keyword_map.find(text) == m_keyword_map.end()) {
-		token_type = TOKEN_TYPE::L_IDENTIFIER;
+		token_type = Token::TYPE::L_IDENTIFIER;
 	} else {
 		token_type = m_keyword_map.at(text);
 	}
@@ -250,14 +250,17 @@ static auto escape_if_escape_string(const std::string& str) -> std::string {
 	}
 	return result;
 }
-auto Tokenizer::create_token_from_type(const TOKEN_TYPE type, CharCursor& start_cursor, CharCursor& current_cursor) const -> const Token {
+
+
+
+auto Tokenizer::create_token_from_type(const Token::TYPE type, CharCursor& start_cursor, CharCursor& current_cursor) const -> const Token {
 	Token token;
 	std::string lexeme(start_cursor.get(), current_cursor.get() + 1);
 
 
 	lexeme = escape_if_escape_string(lexeme);
 
-	if (type == TOKEN_TYPE::L_NUMBER) {
+	if (type == Token::TYPE::L_NUMBER) {
 		auto [number, base] = process_number(lexeme);
 		int num = std::stoi(number, 0, base);
 	}

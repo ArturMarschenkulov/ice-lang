@@ -24,11 +24,18 @@ add_definitions(${LLVM_DEFINITIONS_LIST})
 # add the executable
 add_executable(${PROJECT_NAME} 
     main.cpp
+    ice_lang.h
     ice_lang.cpp
+    tokenizer.h
     tokenizer.cpp
+    token.h
     token.cpp
+    parser.h
     parser.cpp
+    expr.h
+    ast_printer.h
 )
+
 
 # execute_process(COMMAND llvm-config --libs core support
 #                 OUTPUT_VARIABLE llvm_libs)

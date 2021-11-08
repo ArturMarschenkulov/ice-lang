@@ -59,6 +59,7 @@ auto IceContext::main(const std::vector<std::string>& cl_args) -> bool {
             for (size_t i = 0; i < tokens.size(); i++) {
                 std::cout << tokens[i] << std::endl;
             }
+
             Parser parser;
             parser.parse_tokens(tokens);
             
