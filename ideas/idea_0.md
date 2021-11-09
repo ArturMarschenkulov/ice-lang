@@ -113,3 +113,8 @@ fn<*> postfix (i32 x, i32 y) -> i32 {
 }
 ```
 
+## Dynamic numerical base
+
+```
+var x := 10b3;
+```

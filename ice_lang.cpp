@@ -31,7 +31,7 @@ auto IceContext::main(const std::vector<std::string>& cl_args) -> bool {
     
     if(cl_args.size() < 1) {
         // This should never be reached
-        assert(false, "there is an error");
+        assert(("there is an error", false));
     } else if(cl_args.size() == 1) {
         // no arguments
 
@@ -42,7 +42,7 @@ auto IceContext::main(const std::vector<std::string>& cl_args) -> bool {
         // if it has no options then the first argument has to be the file
         if(has_options == true) {
             std::cout << "not implemented yet" << std::endl;
-            assert(false, "not implemented yet");
+            assert(("not implemented yet", false));
             std::cout << "not implemented yet" << std::endl;
         }
         std::string filename = cl_args[1];

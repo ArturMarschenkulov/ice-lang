@@ -20,33 +20,33 @@ struct Span {
 class Token {
 public:
 	enum class TYPE {
-		//PUNCTUATORS ONE
-		P_SEMICOLON, // ;
-		P_COLON,// :
-		P_EQUAL,// =
-		P_BANG, // !
-		P_GREATER, // >
-		P_LESS, // <
-		P_DOT, // .
-		P_COMMA,// ,
-		P_PLUS,	// +
-		P_MINUS,// -
-		P_STAR,	// *
-		P_SLASH,// /
-		P_AMPERSAND, // &
-		P_PIPE, // |
-		P_HASH, // #
-		P_QUESTION, // ?
-		P_AT, // @
-		P_DOLLAR, // $
-		P_TILDE, // ~
+		// //PUNCTUATORS ONE
+		// P_SEMICOLON, // ;
+		// P_COLON,// :
+		// P_EQUAL,// =
+		// P_BANG, // !
+		// P_GREATER, // >
+		// P_LESS, // <
+		// P_DOT, // .
+		// P_COMMA,// ,
+		// P_PLUS,	// +
+		// P_MINUS,// -
+		// P_STAR,	// *
+		// P_SLASH,// /
+		// P_AMPERSAND, // &
+		// P_PIPE, // |
+		// P_HASH, // #
+		// P_QUESTION, // ?
+		// P_AT, // @
+		// P_DOLLAR, // $
+		// P_TILDE, // ~
 
-		P_LEFT_PAREN,    // (
-		P_RIGHT_PAREN,	 // )
-		P_LEFT_BRACKET,	 // [
-		P_RIGHT_BRACKET, // ]
-		P_LEFT_BRACE,	 // {
-		P_RIGHT_BRACE,	 // }
+		// P_LEFT_PAREN,    // (
+		// P_RIGHT_PAREN,	 // )
+		// P_LEFT_BRACKET,	 // [
+		// P_RIGHT_BRACKET, // ]
+		// P_LEFT_BRACE,	 // {
+		// P_RIGHT_BRACE,	 // }
 
 		//TODO: Probably remove
 		// //PUNCTUATORS TWO
@@ -68,13 +68,16 @@ public:
 		KW_U8, KW_U16, KW_U32, KW_U64, KW_U128,
 		KW_F8, KW_F16, KW_F32, KW_F64, KW_F128,
 
-		//LITERAL
+		// LITERALS
 		L_TRUE,
 		L_FALSE,
 		L_NUMBER,
 		L_CHAR,
 		L_STRING,
-		L_IDENTIFIER,
+
+		// SYMBOLS
+		S_IDENTIFIER,
+		S_PUNCTUATOR,
 
 
 		//EXTRA
@@ -86,10 +89,17 @@ public:
 		SKW_UNKNOWN,
 		SKW_PRINT,
 	};
+	enum class WHITESPACE_TYPE {
+		NONE,
+		BEFORE,
+		AFTER,
+		BOTH,
+	};
 public:
 	TYPE type = TYPE::SKW_UNKNOWN;
 	std::string lexeme = "DEBUG: THE LEXEME OF A TOKEN WAS UNTOUCHED. THIS SHOULDN'T BE!";
 	Span span;
+	WHITESPACE_TYPE whitespace_type;
 };
 //auto to_string(TOKEN_TYPE token_type) -> std::string;
 auto operator<<(std::ostream& ost, const Token& token)->std::ostream&;

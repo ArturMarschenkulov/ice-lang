@@ -68,18 +68,7 @@ public:
 		std::string indent_str = get_indent();
 
 		std::string str;
-        //TODO:
-		// if (std::holds_alternative<std::string>(expr.m_lit) == true) {
-		// 	str = std::to_string(std::get<int>(expr.value));
-		// } else if (std::holds_alternative<bool>(expr.m_lit) == true) {
-		// 	if (std::get<bool>(expr.value) == true) {
-		// 		str = "true";
-		// 	} else {
-		// 		str = "false";
-		// 	}
-		// } else {
-		// 	str = "ERROROROROR";
-		// }
+		str = expr.m_lit;
 		stream << indent_str; stream << "LiteralExpr"; stream << "\n";
 		stream << "     " << indent_str; stream << str; stream << "\n";
 		indent_level--;
@@ -93,7 +82,7 @@ public:
 
 		indent_level--;
 	}
-	virtual auto visit(const UnaryExpr& expr) -> void override {
+	virtual auto visit(const PrefixUnaryExpr& expr) -> void override {
 		indent_level++;
 		std::string indent_str;
 		for (int i = 0; i < indent_level; i++) {
@@ -106,10 +95,30 @@ public:
 			}
 		}
 
-		stream << indent_str; stream << "UnaryExpr"; stream << "\n";
+		stream << indent_str; stream << "PrefixUnaryExpr"; stream << "\n";
 		//expr.left->accept(*this); //stream << "\n";
 		stream << "     " << indent_str; stream << "Token " << expr.op.lexeme; stream << "\n";
 		expr.right->accept(*this); //stream << "\n";
+
+		indent_level--;
+	}
+	virtual auto visit(const PostfixUnaryExpr& expr) -> void override {
+		indent_level++;
+		//std::string indent_str;
+		//for (int i = 0; i < indent_level; i++) {
+		//	if (i == (indent_level - 1)) {
+		//		indent_str += " |___";
+		//	} else if (false) {
+		//		indent_str += " |   ";
+		//	} else {
+		//		indent_str += "     ";
+		//	}
+		//}
+
+		//stream << indent_str; stream << "UnaryExpr"; stream << "\n";
+		////expr.left->accept(*this); //stream << "\n";
+		//stream << "     " << indent_str; stream << "Token " << expr.op.lexeme; stream << "\n";
+		//expr.right->accept(*this); //stream << "\n";
 
 		indent_level--;
 	}

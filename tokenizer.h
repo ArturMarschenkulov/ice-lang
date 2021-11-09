@@ -8,7 +8,8 @@
 
 class CharCursor {
 public:
-	CharCursor() {}
+	CharCursor() {
+	}
 	CharCursor(const CharCursor& o) {
 		m_it = o.m_it;
 		m_loc = o.m_loc;
@@ -20,7 +21,7 @@ public:
 		m_it = &str[0];
 		return *this;
 	}
-	auto get() const -> const char*;	
+	auto get() const -> const char*;
 	auto advance() const -> void;
 	auto new_line() const -> void;
 
@@ -39,11 +40,12 @@ public:
 	auto determine_token_type(const char c, CharCursor& current_cursor) const -> const Token::TYPE;
 	auto create_token_from_type(const Token::TYPE type, CharCursor& start_cursor, CharCursor& current_cursor) const -> const Token;
 
+	auto lex_punctuator(CharCursor& current_cursor) const -> const Token::TYPE;
 	auto lex_number(CharCursor& current_cursor) const -> const Token::TYPE;
 	auto lex_identifier(CharCursor& current_cursor) const -> const Token::TYPE;
 
 private:
 
 	std::map<std::string, Token::TYPE> m_keyword_map;
-	
+
 };

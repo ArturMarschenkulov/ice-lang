@@ -5,6 +5,33 @@
 #include <ostream>
 
 
+/*
+0
+expr
+	= expr_prefix expr_binary
+
+list_expr
+	= expr
+	| expr ',' list_expr
+
+expr_binary
+	= op_binary expr_prefix
+	| expr_binary (expr_binary)
+
+expr_prefix
+	= (op_prefix) expr_postfix
+
+expr_postfix
+	= expr_primary
+	| expr_postfix op_postfix
+
+expr_primary
+	= expr_literal
+	| expr_group
+
+*/
+
+
 
 auto Parser::parse_tokens(const std::vector<Token>& tokens) -> void {
 	//TokenCursor tc = { tokens };
@@ -17,7 +44,16 @@ auto Parser::parse_tokens(const std::vector<Token>& tokens) -> void {
 	std::cout << printer.stream.str() << std::endl;
 
 }
-
+auto Parser::parse_expr_unary_prefix(int parent_prec) -> std::unique_ptr<Expr> {
+	
+	Token op = m_tc.peek(0); m_tc.advance();
+	std::unique_ptr<Expr> right = this->parse_expr_binary(parent_prec);
+	auto expr = std::make_unique<PrefixUnaryExpr>(op, std::move(right));
+	return expr;
+}
+//auto Parser::parse_expr_unary_postfix(int parent_prec) -> std::unique_ptr<Expr> {
+//
+//}
 auto Parser::parse_expr_binary(int parent_prec) -> std::unique_ptr<Expr> {
 
 	std::unique_ptr<Expr> left;
@@ -25,7 +61,7 @@ auto Parser::parse_expr_binary(int parent_prec) -> std::unique_ptr<Expr> {
 	if (un_op_prec != 0 && un_op_prec >= parent_prec) {
 		const Token op = m_tc.peek(0); m_tc.advance();
 		std::unique_ptr<Expr> right = this->parse_expr_binary(un_op_prec);
-		//left = std::make_unique<UnaryExpr>(op, std::move(right));
+		left = std::make_unique<PrefixUnaryExpr>(op, std::move(right));
 	} else {
 		left = this->parse_expr_primary();
 	}

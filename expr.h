@@ -5,8 +5,15 @@
 
 class LiteralExpr;
 class BinaryExpr;
-class UnaryExpr;
+class PrefixUnaryExpr;
+class PostfixUnaryExpr;
 class GroupingExpr;
+
+class ExprLiteral;
+class ExprBinary;
+class ExprUnaryPrefix;
+class ExprUnaryPostfix;
+class ExprGrouping;
 
 class Expr {
 public:
@@ -16,12 +23,14 @@ public:
 	public:
 		virtual auto visit(const LiteralExpr& epxr) -> void = 0;
 		virtual auto visit(const BinaryExpr& epxr) -> void = 0;
-        virtual auto visit(const UnaryExpr& expr) -> void = 0;
+		virtual auto visit(const PrefixUnaryExpr& expr) -> void = 0;
+		virtual auto visit(const PostfixUnaryExpr& expr) -> void = 0;
         virtual auto visit(const GroupingExpr& expr) -> void = 0;
 	};
 	virtual auto accept(Visitor&) const -> void = 0;
 };
 
+//NOTE: numeric, string/char, boolean, null
 class LiteralExpr : public Expr {
 public:
 	LiteralExpr(
@@ -53,10 +62,9 @@ public:
 	Token m_op;
 	std::unique_ptr<Expr> m_right;
 };
-//TODO: Probably rename to PrefixUnaryExpr
-class UnaryExpr : public Expr {
+class PrefixUnaryExpr : public Expr {
 public:
-	UnaryExpr(Token op, std::unique_ptr<Expr> right)
+	PrefixUnaryExpr(Token op, std::unique_ptr<Expr> right)
 		: op(op), right(std::move(right)) {
 	}
 	virtual auto accept(Visitor& visitor) const -> void override {
@@ -64,6 +72,17 @@ public:
 	}
 	Token op;
 	std::unique_ptr<Expr> right;
+}; 
+class PostfixUnaryExpr : public Expr {
+public:
+	PostfixUnaryExpr(std::unique_ptr<Expr> right, Token op)
+		: left(std::move(right)), op(op) {
+	}
+	virtual auto accept(Visitor& visitor) const -> void override {
+		visitor.visit(*this);
+	}
+	std::unique_ptr<Expr> left;
+	Token op;
 };
 class GroupingExpr: public Expr {
 public:

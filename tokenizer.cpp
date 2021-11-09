@@ -21,6 +21,42 @@ static auto is_alpha_numeric(const char c) -> bool {
 	return is_alpha(c) || is_digit(c);
 }
 
+static auto is_punctuator(const char c) -> bool {
+	bool result = false;
+	switch (c) {
+		case '+':
+		case '-':
+		case '*':
+		case '/':
+
+		case '&':
+		case '!':
+		case '|':
+		case '=':
+		case '<':
+		case '>':
+		case '.':
+		case ',':
+		case ':':
+		case ';':
+
+		case '#':
+		case '?':
+		case '@':
+		case '$':
+		case '~':
+
+		case '(':
+		case ')':
+		case '[':
+		case ']':
+		case '{':
+		case '}': result = true; break;
+		default: result = false; break;
+	}
+	return result;
+}
+
 static auto is_skip_token(const Token& token) -> bool {
 	switch (token.type) {
 		case Token::TYPE::SKW_WHITESPACE:
@@ -52,34 +88,52 @@ Tokenizer::Tokenizer() {
 
 auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vector<Token> {
 
-	std::vector<Token> tokens;	
-	CharCursor start_cursor = { source };
-	CharCursor current_cursor = start_cursor;
-
-	while (current_cursor.peek(0) != '\0') {
-		start_cursor = current_cursor;
-		const Token token = scan_token(current_cursor.peek(0), start_cursor, current_cursor);
+	std::vector<Token> tokens;
+	CharCursor start_cur = { source }; // start cursor
+	CharCursor cur_cur = start_cur; // current cursor
 
 
-		//if (is_skip_token(token) == false) 
-		{
-			if(tokens.size() > 0 
-				&& tokens[tokens.size() - 1].type == Token::TYPE::SKW_WHITESPACE
-				&& token.type == Token::TYPE::SKW_WHITESPACE) {
-				tokens[tokens.size() - 1].span.end = token.span.end;
-			} else {
-				tokens.push_back(token);
+	Token* p_prev_token = nullptr;// NOTE: Used for combining tokens, like whitespace
+
+	while (cur_cur.peek(0) != '\0') {
+		start_cur = cur_cur;
+		Token token = scan_token(cur_cur.peek(0), start_cur, cur_cur);
+
+		bool is_curr_token_discarded = false;
+		if (p_prev_token != nullptr) {
+			if (token.type == Token::TYPE::SKW_WHITESPACE && p_prev_token->type == Token::TYPE::SKW_WHITESPACE) {
+				p_prev_token->span.end = token.span.end;
+				is_curr_token_discarded = true;
 			}
 		}
-		if(token.type == Token::TYPE::SKW_NEWLINE) {
-			current_cursor.new_line();
-			current_cursor.advance();
+
+		// Handling the before/after whitespace attributes
+		if (tokens.size() > 0) {
+			if (tokens.back().type == Token::TYPE::SKW_WHITESPACE) {
+				token.whitespace_type = Token::WHITESPACE_TYPE::BEFORE;
+			}
+			if (token.type == Token::TYPE::SKW_WHITESPACE) {
+				if (tokens.back().whitespace_type == Token::WHITESPACE_TYPE::BEFORE) {
+					tokens.back().whitespace_type = Token::WHITESPACE_TYPE::BOTH;
+				}
+			}
+		}
+
+		if (is_skip_token(token) == false) {
+			if (is_curr_token_discarded == false) {
+				tokens.push_back(token);
+				p_prev_token = &tokens.back();
+			}
+		}
+		if (token.type == Token::TYPE::SKW_NEWLINE) {
+			cur_cur.new_line();
+			cur_cur.advance();
 		} else {
-			current_cursor.advance();
+			cur_cur.advance();
 		}
 	}
-	start_cursor.advance();
-	tokens.push_back(create_token_from_type(Token::TYPE::SKW_EOF, start_cursor, current_cursor));
+	start_cur.advance();
+	tokens.push_back(create_token_from_type(Token::TYPE::SKW_EOF, start_cur, cur_cur));
 	return tokens;
 }
 
@@ -93,9 +147,6 @@ auto Tokenizer::scan_token(const char c, CharCursor& start_cursor, CharCursor& c
 auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) const -> const Token::TYPE {
 	Token::TYPE token_type;
 	switch (c) {
-		case '+': token_type = Token::TYPE::P_PLUS; break;
-		case '-': token_type = Token::TYPE::P_MINUS; break;
-		case '*': token_type = Token::TYPE::P_STAR; break;
 		case '/':
 		{
 			if (current_cursor.peek(1) == '/') {
@@ -104,6 +155,7 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 					current_cursor.advance();
 				}
 				token_type = Token::TYPE::SKW_COMMENT;
+				break;
 			} else if (current_cursor.peek(1) == '*') {
 				current_cursor.advance();
 				while (current_cursor.peek(1) != '*' && current_cursor.peek(2) != '/') {
@@ -112,33 +164,9 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 				current_cursor.advance();
 				current_cursor.advance();
 				token_type = Token::TYPE::SKW_COMMENT;
-			} else {
-				token_type = Token::TYPE::P_SLASH;
+				break;
 			}
-		}break;
-		case '&': token_type = Token::TYPE::P_AMPERSAND; break;
-		case '!': token_type = Token::TYPE::P_BANG; break;
-		case '|': token_type = Token::TYPE::P_PIPE; break;
-		case '=': token_type = Token::TYPE::P_EQUAL; break;
-		case '<': token_type = Token::TYPE::P_LESS; break;
-		case '>': token_type = Token::TYPE::P_GREATER; break;
-		case '.': token_type = Token::TYPE::P_DOT; break;
-		case ',': token_type = Token::TYPE::P_COMMA; break;
-		case ':': token_type = Token::TYPE::P_COLON; break;
-		case ';': token_type = Token::TYPE::P_SEMICOLON; break;
-
-		case '#': token_type = Token::TYPE::P_HASH; break;
-		case '?': token_type = Token::TYPE::P_QUESTION; break;
-		case '@': token_type = Token::TYPE::P_AT; break;
-		case '$': token_type = Token::TYPE::P_DOLLAR; break;
-		case '~': token_type = Token::TYPE::P_TILDE; break;
-
-		case '(': token_type = Token::TYPE::P_LEFT_PAREN; break;
-		case ')': token_type = Token::TYPE::P_RIGHT_PAREN; break;
-		case '[': token_type = Token::TYPE::P_LEFT_BRACKET; break;
-		case ']': token_type = Token::TYPE::P_RIGHT_BRACKET; break;
-		case '{': token_type = Token::TYPE::P_LEFT_BRACE; break;
-		case '}': token_type = Token::TYPE::P_RIGHT_BRACE; break;
+		};
 
 		case ' ':
 		case '\r':
@@ -147,7 +175,9 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 
 		default:
 		{
-			if (is_digit(c)) {
+			if (is_punctuator(c)) {
+				token_type = lex_punctuator(current_cursor);
+			} else if (is_digit(c)) {
 				token_type = lex_number(current_cursor);
 			} else if (is_alpha(c)) {
 				token_type = lex_identifier(current_cursor);
@@ -159,6 +189,14 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 	}
 	return token_type;
 
+}
+auto Tokenizer::lex_punctuator(CharCursor& current_cursor) const -> const Token::TYPE {
+	const CharCursor prev_cursor = current_cursor;
+	while (is_punctuator(current_cursor.peek(1))) {
+		current_cursor.advance();
+	}
+	std::string lexeme(prev_cursor.get(), current_cursor.get() + 1);
+	return Token::TYPE::S_PUNCTUATOR;
 }
 auto Tokenizer::lex_number(CharCursor& current_cursor) const -> const Token::TYPE {
 	//TODO: Add floating point support
@@ -184,14 +222,14 @@ auto Tokenizer::lex_identifier(CharCursor& current_cursor) const -> const Token:
 	while (is_alpha_numeric(current_cursor.peek(1))) {
 		current_cursor.advance();
 	}
-	std::string text(prev_cursor.get(), current_cursor.get() + 1);
+	std::string lexeme(prev_cursor.get(), current_cursor.get() + 1);
 
 	//determine whether identifier is a keyword
 	Token::TYPE token_type;
-	if (m_keyword_map.find(text) == m_keyword_map.end()) {
-		token_type = Token::TYPE::L_IDENTIFIER;
+	if (m_keyword_map.find(lexeme) == m_keyword_map.end()) {
+		token_type = Token::TYPE::S_IDENTIFIER;
 	} else {
-		token_type = m_keyword_map.at(text);
+		token_type = m_keyword_map.at(lexeme);
 	}
 	return token_type;
 }
@@ -207,22 +245,22 @@ static auto process_number(const std::string& literal) -> std::pair<std::string,
 	} else if (literal.rfind("0x", 0) == 0) {
 		number = literal.substr(2);
 		base = 16;
-	}else if (literal.rfind("0d", 0) == 0) {
+	} else if (literal.rfind("0d", 0) == 0) {
 		number = literal.substr(2);
 		base = 10;
 	} else {
 		number = literal;
 		base = 10;
 	}
-	return {number, base};
+	return { number, base };
 }
 static auto is_lone_escape_string(const std::string& str) -> bool {
 	bool result = false;
-	if(str.size() == 1) {
+	if (str.size() == 1) {
 		char c = str[0];
-		switch(c) {
-			case '\n': 
-			case '\t': 
+		switch (c) {
+			case '\n':
+			case '\t':
 			case '\r': result = true; break;
 			default: result = false; break;
 		}
@@ -234,16 +272,16 @@ static auto is_lone_escape_string(const std::string& str) -> bool {
 static auto escape_if_escape_string(const std::string& str) -> std::string {
 	std::string result;
 	bool is_escape = is_lone_escape_string(str);
-	if(is_escape == true) {
-		if(str == "\n") {
+	if (is_escape == true) {
+		if (str == "\n") {
 			result = "\\n";
-		} else if(str == "\t") {
+		} else if (str == "\t") {
 			result = "\\t";
-		} else if(str == "\r") {
+		} else if (str == "\r") {
 			result = "\\r";
 		} else {
-			
-			assert(false, "not yet implemented");
+
+			assert(("not yet implemented", false));
 		}
 	} else {
 		result = str;
