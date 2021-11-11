@@ -20,46 +20,6 @@ struct Span {
 class Token {
 public:
 	enum class TYPE {
-		// //PUNCTUATORS ONE
-		// P_SEMICOLON, // ;
-		// P_COLON,// :
-		// P_EQUAL,// =
-		// P_BANG, // !
-		// P_GREATER, // >
-		// P_LESS, // <
-		// P_DOT, // .
-		// P_COMMA,// ,
-		// P_PLUS,	// +
-		// P_MINUS,// -
-		// P_STAR,	// *
-		// P_SLASH,// /
-		// P_AMPERSAND, // &
-		// P_PIPE, // |
-		// P_HASH, // #
-		// P_QUESTION, // ?
-		// P_AT, // @
-		// P_DOLLAR, // $
-		// P_TILDE, // ~
-
-		// P_LEFT_PAREN,    // (
-		// P_RIGHT_PAREN,	 // )
-		// P_LEFT_BRACKET,	 // [
-		// P_RIGHT_BRACKET, // ]
-		// P_LEFT_BRACE,	 // {
-		// P_RIGHT_BRACE,	 // }
-
-		//TODO: Probably remove
-		// //PUNCTUATORS TWO
-		// P_COLON_COLON, // ::
-		// P_EQUAL_EQUAL, // ==
-		// P_BANG_EQUAL, // !=
-		// P_GREATER_EQUAL, // >=
-		// P_LESS_EQUAL, // <=
-		// P_AMPERSAND_AMPERSAND, // &&
-		// P_PIPE_PIPE, // ||
-		// P_MINUS_GREATER, // ->
-		// P_EQUAL_GREATER, // =>
-
 		//KEYWORDS
 		KW_VAR,
 		KW_FUNC,
@@ -89,17 +49,15 @@ public:
 		SKW_UNKNOWN,
 		SKW_PRINT,
 	};
-	enum class WHITESPACE_TYPE {
-		NONE,
-		BEFORE,
-		AFTER,
-		BOTH,
+	struct Whitespace {
+		bool left = false;
+		bool right = false;
 	};
 public:
 	TYPE type = TYPE::SKW_UNKNOWN;
 	std::string lexeme = "DEBUG: THE LEXEME OF A TOKEN WAS UNTOUCHED. THIS SHOULDN'T BE!";
 	Span span;
-	WHITESPACE_TYPE whitespace_type;
+	Whitespace whitespace;
 };
 //auto to_string(TOKEN_TYPE token_type) -> std::string;
 auto operator<<(std::ostream& ost, const Token& token)->std::ostream&;

@@ -94,10 +94,13 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 
 
 	Token* p_prev_token = nullptr;// NOTE: Used for combining tokens, like whitespace
-
+	bool last_token_was_whitespace = false;
 	while (cur_cur.peek(0) != '\0') {
 		start_cur = cur_cur;
 		Token token = scan_token(cur_cur.peek(0), start_cur, cur_cur);
+		
+
+
 
 		bool is_curr_token_discarded = false;
 		if (p_prev_token != nullptr) {
@@ -109,14 +112,14 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 
 		// Handling the before/after whitespace attributes
 		if (tokens.size() > 0) {
-			if (tokens.back().type == Token::TYPE::SKW_WHITESPACE) {
-				token.whitespace_type = Token::WHITESPACE_TYPE::BEFORE;
+			if (last_token_was_whitespace) {
+				token.whitespace.left = true;
 			}
 			if (token.type == Token::TYPE::SKW_WHITESPACE) {
-				if (tokens.back().whitespace_type == Token::WHITESPACE_TYPE::BEFORE) {
-					tokens.back().whitespace_type = Token::WHITESPACE_TYPE::BOTH;
-				}
+				tokens.back().whitespace.right = true;
 			}
+		} else {
+			token.whitespace.left = false;
 		}
 
 		if (is_skip_token(token) == false) {
@@ -130,6 +133,12 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 			cur_cur.advance();
 		} else {
 			cur_cur.advance();
+		}
+
+		if (token.type == Token::TYPE::SKW_WHITESPACE) {
+			last_token_was_whitespace = true;
+		} else {
+			last_token_was_whitespace = false;
 		}
 	}
 	start_cur.advance();
