@@ -75,7 +75,7 @@ bin
 	= bin expr bin
 
 expr
-	= expr a 
+	= expr a
 	| b
 
 becomes
@@ -83,7 +83,7 @@ becomes
 expr
 	= b expr'
 expr'
-	= a expr' 
+	= a expr'
 	| 0
 */
 
@@ -99,7 +99,7 @@ op
 expr
 	= expr_literal
 	| expr_binary
-	| expr 
+	| expr
 
 
 expr_binary
@@ -108,12 +108,98 @@ expr_binary
 expr_bin
 */
 
+/*
+ASTs
+1
+(expr_literal
+	1
+)
+1+2
+(expr_binary
+	(expr_literal 1)
+	(token +)
+	(expr_literal 1)
+)
+
+*/
+
+static auto parse_expr_primary(Parser* self) -> std::unique_ptr<Expr> {
+	std::unique_ptr<Expr> expr;
+	if (self->m_tc.match({ Token::TYPE::L_NUMBER })) {
+		const Token lit = self->m_tc.peek(0); self->m_tc.advance();
+		expr = std::make_unique<LiteralExpr>(lit.lexeme);
+	}
+	return expr;
+}
+
+
+static auto parse_expr_unary_postfix(Parser* self) -> std::unique_ptr<Expr> {
+	std::unique_ptr<Expr> expr;
+	if (self->m_tc.peek(1).type == Token::TYPE::S_PUNCTUATOR) {
+		Token op = self->m_tc.peek(1);
+		//check whether it qualifies as a postfix operator
+		if (op.operator_type == Token::OPERATOR_TYPE::POSTFIX) {
+			std::unique_ptr<Expr> inside = parse_expr_primary(self);
+			self->m_tc.advance();
+			expr = std::make_unique<PostfixUnaryExpr>(std::move(inside), op);
+		} else {
+			expr = parse_expr_primary(self);
+		}
+
+	} else {
+		expr = parse_expr_primary(self);
+	}
+	return expr;
+}
+
+
+static auto parse_expr_unary_prefix(Parser* self) -> std::unique_ptr<Expr> {
+	std::unique_ptr<Expr> expr;
+	if (self->m_tc.peek(0).type == Token::TYPE::S_PUNCTUATOR) {
+		Token op = self->m_tc.peek(0);
+		//check whether it qualifies as a prefix operator
+		if (op.operator_type == Token::OPERATOR_TYPE::PREFIX) {
+			self->m_tc.advance();
+			std::unique_ptr<Expr> inside = parse_expr_unary_postfix(self);
+			expr = std::make_unique<PrefixUnaryExpr>(op, std::move(inside));
+		} else {
+			assert(false);
+		}
+	} else {
+		expr = parse_expr_unary_postfix(self);
+	}
+	return expr;
+}
+static auto parse_expr_binary(Parser* self, std::unique_ptr<Expr>* expr_left, int parent_prec) -> std::unique_ptr<Expr> {
+	int bin_op_prec = get_binary_operator_precedence(self->m_tc.peek(0));
+	std::unique_ptr<Expr> expr;
+	while(self->m_tc.peek(0).operator_type == Token::OPERATOR_TYPE::INFIX) {
+		Token op = self->m_tc.peek(0);
+		self->m_tc.advance();
+		std::unique_ptr<Expr> expr_right = parse_expr_unary_prefix(self);
+		expr = std::make_unique<BinaryExpr>(std::move(*expr_left), op, std::move(expr_right));
+	}
+	return expr;
+}
+
+static auto parse_expr(Parser* self) -> std::unique_ptr<Expr> {
+	std::unique_ptr<Expr> expr = parse_expr_unary_prefix(self);
+	if (self->m_tc.peek(0).operator_type == Token::OPERATOR_TYPE::INFIX) {
+		
+		expr = parse_expr_binary(self, &expr, 0);
+	}
+	return expr;
+}
+
+
+
 
 auto Parser::parse_tokens(const std::vector<Token>& tokens) -> void {
 	//TokenCursor tc = { tokens };
 	m_tc = { tokens };
 
-	std::unique_ptr<Expr> expr = this->parse_expr_binary(0);
+	std::unique_ptr<Expr> expr = parse_expr(this);
+	//std::unique_ptr<Expr> expr = this->parse_expr_binary(0);
 
 	ASTPrinter printer;
 	printer.print(expr);
@@ -127,20 +213,24 @@ auto Parser::parse_expr_unary_prefix(int parent_prec) -> std::unique_ptr<Expr> {
 		std::cout << "error: unary operator cannot be separated from its operand" << std::endl;
 		assert(false && "error: unary operator cannot be separated from its operand\n");
 	}
+	if (m_tc.peek(1).type == Token::TYPE::S_PUNCTUATOR) {
+
+	}
 	std::unique_ptr<Expr> right = this->parse_expr_binary(parent_prec);
 	auto expr = std::make_unique<PrefixUnaryExpr>(op, std::move(right));
 	return expr;
 }
 auto Parser::parse_expr_unary_postfix(int parent_prec) -> std::unique_ptr<Expr> {
 
-
+	auto op = m_tc.peek(1);
 	std::unique_ptr<Expr> left = this->parse_expr_binary(parent_prec);
-	//Token op = m_tc.peek(0); m_tc.advance();
-	//auto expr = std::make_unique<PostfixUnaryExpr>(std::move(left), op);
-	return left;
+	auto expr = std::make_unique<PostfixUnaryExpr>(std::move(left), op);
+	return expr;
 }
+
 auto Parser::parse_expr_binary(int parent_prec) -> std::unique_ptr<Expr> {
 
+	//auto e = parse_expr_unary_prefix_(this);
 	std::unique_ptr<Expr> left;
 	int un_op_prec = get_unary_operator_precedence(m_tc.peek(0));
 	if (un_op_prec != 0 && un_op_prec >= parent_prec) {

@@ -113,10 +113,6 @@ struct TokenCursor {
 	}
 	auto advance() -> void {
 		m_it++;
-		//NOTE: Consider whether this is a good approach
-		if (m_it->type == Token::TYPE::SKW_WHITESPACE) {
-			m_it++;
-		}
 	}
 	auto peek(int n) const -> const Token& {
 		return *(m_it + n);

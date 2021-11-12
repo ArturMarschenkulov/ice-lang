@@ -65,23 +65,23 @@ public:
 class PrefixUnaryExpr : public Expr {
 public:
 	PrefixUnaryExpr(Token op, std::unique_ptr<Expr> right)
-		: op(op), right(std::move(right)) {
+		: op(op), expr(std::move(right)) {
 	}
 	virtual auto accept(Visitor& visitor) const -> void override {
 		visitor.visit(*this);
 	}
 	Token op;
-	std::unique_ptr<Expr> right;
+	std::unique_ptr<Expr> expr;
 }; 
 class PostfixUnaryExpr : public Expr {
 public:
 	PostfixUnaryExpr(std::unique_ptr<Expr> right, Token op)
-		: left(std::move(right)), op(op) {
+		: expr(std::move(right)), op(op) {
 	}
 	virtual auto accept(Visitor& visitor) const -> void override {
 		visitor.visit(*this);
 	}
-	std::unique_ptr<Expr> left;
+	std::unique_ptr<Expr> expr;
 	Token op;
 };
 class GroupingExpr: public Expr {

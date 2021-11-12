@@ -98,27 +98,26 @@ public:
 		stream << indent_str; stream << "PrefixUnaryExpr"; stream << "\n";
 		//expr.left->accept(*this); //stream << "\n";
 		stream << "     " << indent_str; stream << "Token " << expr.op.lexeme; stream << "\n";
-		expr.right->accept(*this); //stream << "\n";
+		expr.expr->accept(*this); //stream << "\n";
 
 		indent_level--;
 	}
 	virtual auto visit(const PostfixUnaryExpr& expr) -> void override {
 		indent_level++;
-		//std::string indent_str;
-		//for (int i = 0; i < indent_level; i++) {
-		//	if (i == (indent_level - 1)) {
-		//		indent_str += " |___";
-		//	} else if (false) {
-		//		indent_str += " |   ";
-		//	} else {
-		//		indent_str += "     ";
-		//	}
-		//}
+		std::string indent_str;
+		for (int i = 0; i < indent_level; i++) {
+			if (i == (indent_level - 1)) {
+				indent_str += " |___";
+			} else if (false) {
+				indent_str += " |   ";
+			} else {
+				indent_str += "     ";
+			}
+		}
 
-		//stream << indent_str; stream << "UnaryExpr"; stream << "\n";
-		////expr.left->accept(*this); //stream << "\n";
-		//stream << "     " << indent_str; stream << "Token " << expr.op.lexeme; stream << "\n";
-		//expr.right->accept(*this); //stream << "\n";
+		stream << indent_str; stream << "PostfixUnaryExpr"; stream << "\n";
+		expr.expr->accept(*this); //stream << "\n";
+		stream << "     " << indent_str; stream << "Token " << expr.op.lexeme; stream << "\n";
 
 		indent_level--;
 	}

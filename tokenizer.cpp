@@ -57,6 +57,11 @@ static auto is_punctuator(const char c) -> bool {
 	return result;
 }
 
+static auto is_potential_operator(const Token& token) -> bool {
+	// TODO: Implement it
+	return true;
+}
+
 static auto is_skip_token(const Token& token) -> bool {
 	switch (token.type) {
 		case Token::TYPE::SKW_WHITESPACE:
@@ -98,7 +103,7 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 	while (cur_cur.peek(0) != '\0') {
 		start_cur = cur_cur;
 		Token token = scan_token(cur_cur.peek(0), start_cur, cur_cur);
-		
+
 
 
 
@@ -122,12 +127,40 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 			token.whitespace.left = false;
 		}
 
+		// Decide what type of operator the last inserted token was.
+		if (tokens.size() > 0) {
+			if (tokens.back().type == Token::TYPE::S_PUNCTUATOR) {
+				Token& last_tok = tokens.back();
+				if (is_potential_operator(last_tok)) {
+					//If at the start and no right whitespace then it must be PREFIX
+					if(tokens.size() == 1 && last_tok.whitespace.right == false) {
+						last_tok.operator_type = Token::OPERATOR_TYPE::PREFIX;
+					} else if (last_tok.whitespace.right == last_tok.whitespace.left) {
+						last_tok.operator_type = Token::OPERATOR_TYPE::INFIX;
+					} else if (last_tok.whitespace.right == false) {
+						last_tok.operator_type = Token::OPERATOR_TYPE::PREFIX;
+					} else if (last_tok.whitespace.left == false) {
+						last_tok.operator_type = Token::OPERATOR_TYPE::POSTFIX;
+					}
+					
+				}
+			}
+		}
+
+
+
 		if (is_skip_token(token) == false) {
 			if (is_curr_token_discarded == false) {
 				tokens.push_back(token);
 				p_prev_token = &tokens.back();
 			}
 		}
+
+
+
+
+
+
 		if (token.type == Token::TYPE::SKW_NEWLINE) {
 			cur_cur.new_line();
 			cur_cur.advance();

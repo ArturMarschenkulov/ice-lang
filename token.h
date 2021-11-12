@@ -53,11 +53,21 @@ public:
 		bool left = false;
 		bool right = false;
 	};
+
+	// NOTE: This is only relevant for TYPE::S_PUNCTUATOR. Maybe in the future also TYPE::S_IDENTIFIER.
+	// TODO: Maybe refactor how it is handled.
+	enum class OPERATOR_TYPE {
+		NONE,
+		PREFIX,
+		POSTFIX,
+		INFIX,
+	};
 public:
 	TYPE type = TYPE::SKW_UNKNOWN;
 	std::string lexeme = "DEBUG: THE LEXEME OF A TOKEN WAS UNTOUCHED. THIS SHOULDN'T BE!";
 	Span span;
 	Whitespace whitespace;
+	OPERATOR_TYPE operator_type = OPERATOR_TYPE::NONE;
 };
 //auto to_string(TOKEN_TYPE token_type) -> std::string;
 auto operator<<(std::ostream& ost, const Token& token)->std::ostream&;
