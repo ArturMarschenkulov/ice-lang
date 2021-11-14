@@ -3,12 +3,6 @@
 #include "token.h"
 #include <memory>
 
-class LiteralExpr;
-class BinaryExpr;
-class PrefixUnaryExpr;
-class PostfixUnaryExpr;
-class GroupingExpr;
-
 class ExprLiteral;
 class ExprBinary;
 class ExprUnaryPrefix;
@@ -21,19 +15,19 @@ public:
 
 	class Visitor {
 	public:
-		virtual auto visit(const LiteralExpr& epxr) -> void = 0;
-		virtual auto visit(const BinaryExpr& epxr) -> void = 0;
-		virtual auto visit(const PrefixUnaryExpr& expr) -> void = 0;
-		virtual auto visit(const PostfixUnaryExpr& expr) -> void = 0;
-        virtual auto visit(const GroupingExpr& expr) -> void = 0;
+		virtual auto visit(const ExprLiteral& epxr) -> void = 0;
+		virtual auto visit(const ExprBinary& epxr) -> void = 0;
+		virtual auto visit(const ExprUnaryPrefix& expr) -> void = 0;
+		virtual auto visit(const ExprUnaryPostfix& expr) -> void = 0;
+        virtual auto visit(const ExprGrouping& expr) -> void = 0;
 	};
 	virtual auto accept(Visitor&) const -> void = 0;
 };
 
 //NOTE: numeric, string/char, boolean, null
-class LiteralExpr : public Expr {
+class ExprLiteral : public Expr {
 public:
-	LiteralExpr(
+	ExprLiteral(
 		std::string lit
 	) : m_lit(std::move(lit)) {
 
@@ -44,9 +38,9 @@ public:
 	std::string m_lit;
 };
 
-class BinaryExpr : public Expr {
+class ExprBinary : public Expr {
 public:
-	BinaryExpr(
+	ExprBinary(
 		std::unique_ptr<Expr> left,
 		Token op,
 		std::unique_ptr<Expr> right
@@ -62,9 +56,9 @@ public:
 	Token m_op;
 	std::unique_ptr<Expr> m_right;
 };
-class PrefixUnaryExpr : public Expr {
+class ExprUnaryPrefix : public Expr {
 public:
-	PrefixUnaryExpr(Token op, std::unique_ptr<Expr> right)
+	ExprUnaryPrefix(Token op, std::unique_ptr<Expr> right)
 		: op(op), expr(std::move(right)) {
 	}
 	virtual auto accept(Visitor& visitor) const -> void override {
@@ -73,9 +67,9 @@ public:
 	Token op;
 	std::unique_ptr<Expr> expr;
 }; 
-class PostfixUnaryExpr : public Expr {
+class ExprUnaryPostfix : public Expr {
 public:
-	PostfixUnaryExpr(std::unique_ptr<Expr> right, Token op)
+	ExprUnaryPostfix(std::unique_ptr<Expr> right, Token op)
 		: expr(std::move(right)), op(op) {
 	}
 	virtual auto accept(Visitor& visitor) const -> void override {
@@ -84,9 +78,9 @@ public:
 	std::unique_ptr<Expr> expr;
 	Token op;
 };
-class GroupingExpr: public Expr {
+class ExprGrouping: public Expr {
 public:
-	GroupingExpr(std::unique_ptr<Expr> expr) 
+	ExprGrouping(std::unique_ptr<Expr> expr)
 		: expr(std::move(expr)){
 	}
 	virtual auto accept(Visitor& visitor) const -> void override {

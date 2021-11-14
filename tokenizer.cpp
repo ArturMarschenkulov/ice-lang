@@ -88,6 +88,19 @@ static auto is_left_bound(const CharCursor& cur) -> bool {
 	return result;
 }
 
+static auto can_be_multichar_punctuator(const char c) -> bool {
+	bool result;
+	switch (c) {
+		case ';':
+		case '[': case ']': case '(': case ')': case '{': case '}':
+		{
+			result = false;
+		}break;
+		default: result = true; break;
+	}
+	return result;
+}
+
 static auto is_right_bound(const CharCursor& cur) -> bool {
 	bool result;
 	switch (cur.peek(+1)) {
@@ -122,16 +135,13 @@ Tokenizer::Tokenizer() {
 
 
 }
-#include<algorithm>
+
 auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vector<Token> {
 
 	std::vector<Token> tokens;
 	CharCursor start_cur = { source }; // start cursor
 	CharCursor cur_cur = start_cur; // current cursor
 	const char* source_begin = source.c_str();
-
-
-	Token* p_prev_token = nullptr;// NOTE: Used for combining tokens, like whitespace
 
 	while (cur_cur.peek(0) != '\0') {
 		start_cur = cur_cur;
@@ -153,11 +163,11 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 				const bool left_bound = is_left_bound(start_cur);
 				const bool right_bound = is_right_bound(cur_cur);
 
-				if(left_bound == right_bound) {
+				if (left_bound == right_bound) {
 					token.operator_type = Token::OPERATOR_TYPE::INFIX;
-				} else if(left_bound == true) {
+				} else if (left_bound == true) {
 					token.operator_type = Token::OPERATOR_TYPE::POSTFIX;
-				} else if(right_bound == true) {
+				} else if (right_bound == true) {
 					token.operator_type = Token::OPERATOR_TYPE::PREFIX;
 				}
 			}
@@ -166,7 +176,6 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 
 		if (is_skip_token(token) == false) {
 			tokens.push_back(token);
-			p_prev_token = &tokens.back();
 		}
 
 		if (token.type == Token::TYPE::SKW_NEWLINE) {
@@ -236,7 +245,7 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 }
 auto Tokenizer::lex_punctuator(CharCursor& current_cursor) const -> const Token::TYPE {
 	const CharCursor prev_cursor = current_cursor;
-	while (is_punctuator(current_cursor.peek(1))) {
+	while (is_punctuator(current_cursor.peek(1)) && can_be_multichar_punctuator(current_cursor.peek(1))) {
 		current_cursor.advance();
 	}
 	std::string lexeme(prev_cursor.get(), current_cursor.get() + 1);

@@ -149,7 +149,7 @@ static auto parse_expr_primary(Parser* self) -> std::unique_ptr<Expr> {
 	std::unique_ptr<Expr> expr;
 	if (self->m_tc.match({ Token::TYPE::L_NUMBER })) {
 		const Token lit = self->m_tc.peek(0); self->m_tc.advance();
-		expr = std::make_unique<LiteralExpr>(lit.lexeme);
+		expr = std::make_unique<ExprLiteral>(lit.lexeme);
 	}
 	return expr;
 }
@@ -163,7 +163,7 @@ static auto parse_expr_unary_postfix(Parser* self) -> std::unique_ptr<Expr> {
 		if (op.operator_type == Token::OPERATOR_TYPE::POSTFIX) {
 			std::unique_ptr<Expr> inside = parse_expr_primary(self);
 			self->m_tc.advance();
-			expr = std::make_unique<PostfixUnaryExpr>(std::move(inside), op);
+			expr = std::make_unique<ExprUnaryPostfix>(std::move(inside), op);
 		} else {
 			expr = parse_expr_primary(self);
 		}
@@ -183,7 +183,7 @@ static auto parse_expr_unary_prefix(Parser* self) -> std::unique_ptr<Expr> {
 		if (op.operator_type == Token::OPERATOR_TYPE::PREFIX) {
 			self->m_tc.advance();
 			std::unique_ptr<Expr> inside = parse_expr_unary_postfix(self);
-			expr = std::make_unique<PrefixUnaryExpr>(op, std::move(inside));
+			expr = std::make_unique<ExprUnaryPrefix>(op, std::move(inside));
 		} else {
 			assert(false);
 		}
@@ -212,7 +212,7 @@ static auto parse_expr_binary_2(Parser* self, int parent_prec) -> std::unique_pt
 		}
 		const Token op = self->m_tc.peek(0); self->m_tc.advance();
 		std::unique_ptr<Expr> right = parse_expr_binary_2(self, bin_op_prec);
-		left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+		left = std::make_unique<ExprBinary>(std::move(left), op, std::move(right));
 	}
 
 	return left;
@@ -236,7 +236,7 @@ static auto parse_expr_binary(Parser* self, float prev_bp) -> std::unique_ptr<Ex
 		}
 		const Token op = self->m_tc.peek(0); self->m_tc.advance();
 		std::unique_ptr<Expr> right = parse_expr_binary(self, bp.right);
-		left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+		left = std::make_unique<ExprBinary>(std::move(left), op, std::move(right));
 	}
 
 	return left;
@@ -272,14 +272,14 @@ auto Parser::parse_expr_unary_prefix(int parent_prec) -> std::unique_ptr<Expr> {
 
 	}
 	std::unique_ptr<Expr> right = this->parse_expr_binary(parent_prec);
-	auto expr = std::make_unique<PrefixUnaryExpr>(op, std::move(right));
+	auto expr = std::make_unique<ExprUnaryPrefix>(op, std::move(right));
 	return expr;
 }
 auto Parser::parse_expr_unary_postfix(int parent_prec) -> std::unique_ptr<Expr> {
 
 	auto op = m_tc.peek(1);
 	std::unique_ptr<Expr> left = this->parse_expr_binary(parent_prec);
-	auto expr = std::make_unique<PostfixUnaryExpr>(std::move(left), op);
+	auto expr = std::make_unique<ExprUnaryPostfix>(std::move(left), op);
 	return expr;
 }
 
@@ -303,7 +303,7 @@ auto Parser::parse_expr_binary(int parent_prec) -> std::unique_ptr<Expr> {
 		}
 		const Token op = m_tc.peek(0); m_tc.advance();
 		std::unique_ptr<Expr> right = this->parse_expr_binary(bin_op_prec);
-		left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+		left = std::make_unique<ExprBinary>(std::move(left), op, std::move(right));
 	}
 
 	return left;
@@ -313,7 +313,7 @@ auto Parser::parse_expr_primary() -> std::unique_ptr<Expr> {
 	std::unique_ptr<Expr> expr;
 	if (m_tc.match({ Token::TYPE::L_NUMBER })) {
 		const Token lit = m_tc.peek(0); m_tc.advance();
-		expr = std::make_unique<LiteralExpr>(lit.lexeme);
+		expr = std::make_unique<ExprLiteral>(lit.lexeme);
 	}
 	return expr;
 }

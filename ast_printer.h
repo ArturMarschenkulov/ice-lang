@@ -54,7 +54,7 @@ public:
 		return stream.str();
 	}
 
-	virtual auto visit(const BinaryExpr& expr) -> void override {
+	virtual auto visit(const ExprBinary& expr) -> void override {
 		std::string indent_str = get_indent();
 
 		stream << indent_str; stream << "BinaryExpr"; stream << "\n";
@@ -64,7 +64,7 @@ public:
 
 		indent_level--;
 	}
-	virtual auto visit(const LiteralExpr& expr) -> void override {
+	virtual auto visit(const ExprLiteral& expr) -> void override {
 		std::string indent_str = get_indent();
 
 		std::string str;
@@ -74,7 +74,7 @@ public:
 		indent_level--;
 
 	}
-	virtual auto visit(const GroupingExpr& expr) -> void override {
+	virtual auto visit(const ExprGrouping& expr) -> void override {
 		std::string indent_str = get_indent();
 
 		stream << indent_str; stream << "GroupingExpr"; stream << "\n";
@@ -82,7 +82,7 @@ public:
 
 		indent_level--;
 	}
-	virtual auto visit(const PrefixUnaryExpr& expr) -> void override {
+	virtual auto visit(const ExprUnaryPrefix& expr) -> void override {
 		indent_level++;
 		std::string indent_str;
 		for (int i = 0; i < indent_level; i++) {
@@ -102,7 +102,7 @@ public:
 
 		indent_level--;
 	}
-	virtual auto visit(const PostfixUnaryExpr& expr) -> void override {
+	virtual auto visit(const ExprUnaryPostfix& expr) -> void override {
 		indent_level++;
 		std::string indent_str;
 		for (int i = 0; i < indent_level; i++) {
