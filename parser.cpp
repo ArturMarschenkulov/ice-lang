@@ -108,20 +108,42 @@ expr_binary
 expr_bin
 */
 
-/*
-ASTs
-1
-(expr_literal
-	1
-)
-1+2
-(expr_binary
-	(expr_literal 1)
-	(token +)
-	(expr_literal 1)
-)
+struct BindingPower {
+	float left = 0.0f;
+	float right = 0.0f;
 
-*/
+	auto is_zero() -> bool {
+		if(left == 0.0f && right == 0.0f) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+};
+
+static auto get_infix_binding_power(const Token& token) -> BindingPower {
+	BindingPower binding_power;
+	if (token.type != Token::TYPE::S_PUNCTUATOR) {
+		return { 0, 0 };
+	};
+
+	const std::string& op = token.lexeme;
+	const float eps = 0.1f;
+	if (
+		op == "*"|| 
+		op == "/"
+		) {
+		float prec = 5.0f;
+		binding_power = { prec, prec + eps };
+	} else if (
+		op == "+" || 
+		op == "-"
+		) {
+		const float prec = 4.0f;
+		binding_power = { prec, prec + eps };
+	}
+
+}
 
 static auto parse_expr_primary(Parser* self) -> std::unique_ptr<Expr> {
 	std::unique_ptr<Expr> expr;
@@ -170,24 +192,58 @@ static auto parse_expr_unary_prefix(Parser* self) -> std::unique_ptr<Expr> {
 	}
 	return expr;
 }
-static auto parse_expr_binary(Parser* self, std::unique_ptr<Expr>* expr_left, int parent_prec) -> std::unique_ptr<Expr> {
-	int bin_op_prec = get_binary_operator_precedence(self->m_tc.peek(0));
-	std::unique_ptr<Expr> expr;
-	while(self->m_tc.peek(0).operator_type == Token::OPERATOR_TYPE::INFIX) {
-		Token op = self->m_tc.peek(0);
-		self->m_tc.advance();
-		std::unique_ptr<Expr> expr_right = parse_expr_unary_prefix(self);
-		expr = std::make_unique<BinaryExpr>(std::move(*expr_left), op, std::move(expr_right));
+
+
+//NOTE: more or less the entry expression function
+static auto parse_expr_binary_2(Parser* self, int parent_prec) -> std::unique_ptr<Expr> {
+	std::unique_ptr<Expr> left;
+
+	int un_op_prec = get_unary_operator_precedence(self->m_tc.peek(0));
+	if (un_op_prec != 0 && un_op_prec >= parent_prec) {
+		left = parse_expr_unary_prefix(self);
+	} else {
+		left = parse_expr_primary(self);
 	}
-	return expr;
+
+	while (true) {
+		int bin_op_prec = get_binary_operator_precedence(self->m_tc.peek(0));
+		if (bin_op_prec == 0 || bin_op_prec <= parent_prec) {
+			break;
+		}
+		const Token op = self->m_tc.peek(0); self->m_tc.advance();
+		std::unique_ptr<Expr> right = parse_expr_binary_2(self, bin_op_prec);
+		left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+	}
+
+	return left;
+}
+
+static auto parse_expr_binary(Parser* self, float prev_bp) -> std::unique_ptr<Expr> {
+	std::unique_ptr<Expr> left;
+
+	int un_op_prec = get_unary_operator_precedence(self->m_tc.peek(0));
+	if (un_op_prec != 0 && un_op_prec >= prev_bp) {
+		left = parse_expr_unary_prefix(self);
+	} else {
+		left = parse_expr_unary_postfix(self);
+	}
+
+	while (true) {
+		BindingPower bp = get_infix_binding_power(self->m_tc.peek(0));
+		//int bin_op_prec = get_binary_operator_precedence(self->m_tc.peek(0));
+		if (bp.is_zero() || bp.left <= prev_bp) {
+			break;
+		}
+		const Token op = self->m_tc.peek(0); self->m_tc.advance();
+		std::unique_ptr<Expr> right = parse_expr_binary(self, bp.right);
+		left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+	}
+
+	return left;
 }
 
 static auto parse_expr(Parser* self) -> std::unique_ptr<Expr> {
-	std::unique_ptr<Expr> expr = parse_expr_unary_prefix(self);
-	if (self->m_tc.peek(0).operator_type == Token::OPERATOR_TYPE::INFIX) {
-		
-		expr = parse_expr_binary(self, &expr, 0);
-	}
+	std::unique_ptr<Expr> expr = parse_expr_binary(self, 0);
 	return expr;
 }
 
@@ -199,7 +255,6 @@ auto Parser::parse_tokens(const std::vector<Token>& tokens) -> void {
 	m_tc = { tokens };
 
 	std::unique_ptr<Expr> expr = parse_expr(this);
-	//std::unique_ptr<Expr> expr = this->parse_expr_binary(0);
 
 	ASTPrinter printer;
 	printer.print(expr);

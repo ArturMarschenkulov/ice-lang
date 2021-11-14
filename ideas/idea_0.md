@@ -8,6 +8,7 @@
   - [3.2. Operator overloading and custom operators](#32-operator-overloading-and-custom-operators)
   - [3.3. Dynamic numerical base](#33-dynamic-numerical-base)
   - [3.4. Switch statements](#34-switch-statements)
+  - [Structs](#structs)
   - [3.5. Traits](#35-traits)
     - [3.5.1. Names for traits in other languages](#351-names-for-traits-in-other-languages)
 
@@ -149,6 +150,19 @@ fn foo(x: i32) -> i32 {
     
 }
 ```
+## Structs
+
+```
+type Person: struct {
+    age: u32,
+};
+
+var person : struct {
+    age: u32,
+} = { 
+    .age = 30,
+};
+```
 
 ## 3.5. Traits
 ### 3.5.1. Names for traits in other languages
@@ -158,6 +172,9 @@ C++: ``concept``
 Perl: ``role``
 Kotlin: ``interface``
 Haskell: ``typeclass``
+
+
+
 
 ```
 

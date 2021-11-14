@@ -70,6 +70,38 @@ static auto is_skip_token(const Token& token) -> bool {
 		default: return false;
 	}
 }
+
+static auto is_left_bound(const CharCursor& cur) -> bool {
+	bool result;
+	//if (tok_begin == buffer_begin) return false;
+
+	switch (cur.peek(-1)) {
+		case ' ': case '\r': case '\n': case '\t':
+		case '(': case '[': case '{':
+		case ',': case ';': case ':':
+		case '\0':
+		{
+			result = false;
+		} break;
+		default: result = true;
+	}
+	return result;
+}
+
+static auto is_right_bound(const CharCursor& cur) -> bool {
+	bool result;
+	switch (cur.peek(+1)) {
+		case ' ': case '\r': case '\n': case '\t':
+		case ')': case ']': case '}':
+		case ',': case ';': case ':':
+		case '\0':
+		{
+			result = false;
+		} break;
+		default: result = true;
+	}
+	return result;
+}
 enum class BASE {
 	BINARY,
 	OCTAL,
@@ -90,88 +122,58 @@ Tokenizer::Tokenizer() {
 
 
 }
-
+#include<algorithm>
 auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vector<Token> {
 
 	std::vector<Token> tokens;
 	CharCursor start_cur = { source }; // start cursor
 	CharCursor cur_cur = start_cur; // current cursor
+	const char* source_begin = source.c_str();
 
 
 	Token* p_prev_token = nullptr;// NOTE: Used for combining tokens, like whitespace
-	bool last_token_was_whitespace = false;
+
 	while (cur_cur.peek(0) != '\0') {
 		start_cur = cur_cur;
 		Token token = scan_token(cur_cur.peek(0), start_cur, cur_cur);
 
-
-
-
-		bool is_curr_token_discarded = false;
-		if (p_prev_token != nullptr) {
-			if (token.type == Token::TYPE::SKW_WHITESPACE && p_prev_token->type == Token::TYPE::SKW_WHITESPACE) {
-				p_prev_token->span.end = token.span.end;
-				is_curr_token_discarded = true;
-			}
-		}
-
-		// Handling the before/after whitespace attributes
-		if (tokens.size() > 0) {
-			if (last_token_was_whitespace) {
+		// Handle whitespace attribute
+		{
+			if (start_cur.peek(-1) == ' ') {
 				token.whitespace.left = true;
 			}
-			if (token.type == Token::TYPE::SKW_WHITESPACE) {
-				tokens.back().whitespace.right = true;
+			if (cur_cur.peek(+1) == ' ') {
+				token.whitespace.right = true;
 			}
-		} else {
-			token.whitespace.left = false;
+
 		}
 
-		// Decide what type of operator the last inserted token was.
-		if (tokens.size() > 0) {
-			if (tokens.back().type == Token::TYPE::S_PUNCTUATOR) {
-				Token& last_tok = tokens.back();
-				if (is_potential_operator(last_tok)) {
-					//If at the start and no right whitespace then it must be PREFIX
-					if(tokens.size() == 1 && last_tok.whitespace.right == false) {
-						last_tok.operator_type = Token::OPERATOR_TYPE::PREFIX;
-					} else if (last_tok.whitespace.right == last_tok.whitespace.left) {
-						last_tok.operator_type = Token::OPERATOR_TYPE::INFIX;
-					} else if (last_tok.whitespace.right == false) {
-						last_tok.operator_type = Token::OPERATOR_TYPE::PREFIX;
-					} else if (last_tok.whitespace.left == false) {
-						last_tok.operator_type = Token::OPERATOR_TYPE::POSTFIX;
-					}
-					
+		{
+			if (token.type == Token::TYPE::S_PUNCTUATOR) {
+				const bool left_bound = is_left_bound(start_cur);
+				const bool right_bound = is_right_bound(cur_cur);
+
+				if(left_bound == right_bound) {
+					token.operator_type = Token::OPERATOR_TYPE::INFIX;
+				} else if(left_bound == true) {
+					token.operator_type = Token::OPERATOR_TYPE::POSTFIX;
+				} else if(right_bound == true) {
+					token.operator_type = Token::OPERATOR_TYPE::PREFIX;
 				}
 			}
 		}
 
 
-
 		if (is_skip_token(token) == false) {
-			if (is_curr_token_discarded == false) {
-				tokens.push_back(token);
-				p_prev_token = &tokens.back();
-			}
+			tokens.push_back(token);
+			p_prev_token = &tokens.back();
 		}
-
-
-
-
-
 
 		if (token.type == Token::TYPE::SKW_NEWLINE) {
 			cur_cur.new_line();
 			cur_cur.advance();
 		} else {
 			cur_cur.advance();
-		}
-
-		if (token.type == Token::TYPE::SKW_WHITESPACE) {
-			last_token_was_whitespace = true;
-		} else {
-			last_token_was_whitespace = false;
 		}
 	}
 	start_cur.advance();
