@@ -35,6 +35,13 @@ public:
 	virtual auto accept(Visitor& visitor) const -> void override {
 		visitor.visit(*this);
 	}
+	enum class TYPE {
+		INTEGER,
+		FLOAT,
+		BOOL,
+		CHAR,
+		STRING,
+	};
 	std::string m_lit;
 };
 

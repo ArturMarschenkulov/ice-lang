@@ -33,6 +33,8 @@ add_executable(${PROJECT_NAME}
     parser.h
     parser.cpp
     expr.h
+    stmt.h
+    #decl.h
     ast_printer.h
 )
 
@@ -41,16 +43,8 @@ add_executable(${PROJECT_NAME}
 #                 OUTPUT_VARIABLE llvm_libs)
 
 llvm_map_components_to_libnames(llvm_libs
-    #analysis
     core
-    #executionEngine
-    #instCombine
-    #object
-    #orcJIT
-    #runtimeDyld
-    #scalarOpts
     support
-    #native
 )
 
 target_link_libraries(${PROJECT_NAME} ${llvm_libs})

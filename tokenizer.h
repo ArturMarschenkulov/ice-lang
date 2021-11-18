@@ -43,6 +43,7 @@ public:
 	auto lex_punctuator(CharCursor& current_cursor) const -> const Token::TYPE;
 	auto lex_number(CharCursor& current_cursor) const -> const Token::TYPE;
 	auto lex_identifier(CharCursor& current_cursor) const -> const Token::TYPE;
+	auto lex_string(CharCursor& current_cursor) const -> const Token::TYPE;
 
 private:
 

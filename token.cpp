@@ -9,7 +9,9 @@ static auto to_string(Token::TYPE token_type) -> std::string {
 	case Token::TYPE::KW_RETURN: return "KW_RETURN"; break;
 
 
-	case Token::TYPE::L_NUMBER: return "L_NUMBER"; break;
+	//case Token::TYPE::L_NUMBER: return "L_NUMBER"; break;
+	case Token::TYPE::L_INTEGER: return "L_INTEGER"; break;
+	case Token::TYPE::L_FLOAT: return "L_FLOAT"; break;
 	case Token::TYPE::L_TRUE: return "L_TRUE"; break;
 	case Token::TYPE::L_FALSE: return "L_FALSE"; break;
 

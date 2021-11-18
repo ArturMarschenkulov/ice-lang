@@ -19,6 +19,20 @@ struct Span {
 //using IceObject = std::variant<int, bool, std::monostate>;
 class Token {
 public:
+	enum class TYPE2 {
+		KEYWORD,
+		LITERAL,
+		IDENTIFIER,
+		PUNCTUATOR,
+
+		SKW_EOF,
+		SKW_WHITESPACE,
+		SKW_TAB,
+		SKW_NEWLINE,
+		SKW_COMMENT,
+		SKW_UNKNOWN,
+		SKW_PRINT,
+	};
 	enum class TYPE {
 		//KEYWORDS
 		KW_VAR,
@@ -31,7 +45,9 @@ public:
 		// LITERALS
 		L_TRUE,
 		L_FALSE,
-		L_NUMBER,
+		//L_NUMBER,
+		L_INTEGER,
+		L_FLOAT,
 		L_CHAR,
 		L_STRING,
 

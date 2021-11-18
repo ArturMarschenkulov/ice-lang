@@ -2,22 +2,12 @@
 
 #include "token.h"
 #include "expr.h"
+#include "stmt.h"
 
 #include <vector>
 #include <memory>
 
 
-
-
-static auto get_pre_un_op_prec(const Token& token) -> int {
-
-}
-static auto get_post_un_op_prec(const Token& token) -> int {
-
-}
-static auto get_bin_op_prec(const Token& token) -> int {
-
-}
 
 static auto get_unary_operator_precedence(const Token& token) -> int {
 	int precedence = 0;
@@ -117,10 +107,12 @@ struct TokenCursor {
 	auto peek(int n) const -> const Token& {
 		return *(m_it + n);
 	}
-	auto is_at_end() -> bool {
+	auto is_at_end() const -> bool {
 		return this->peek(0).type == Token::TYPE::SKW_EOF;
 	}
 
+	auto expect() const -> void {
+	}
 	auto match(Token::TYPE type) const -> bool {
 		return this->peek(0).type == type;
 	}
@@ -141,10 +133,10 @@ public:
 	auto parse_tokens(const std::vector<Token>& tokens) -> void;
 
 	
-	auto parse_expr_unary_prefix(int parent_prec) -> std::unique_ptr<Expr>;
-	auto parse_expr_unary_postfix(int parent_prec) -> std::unique_ptr<Expr>;
-	auto parse_expr_binary(int parent_prec)->std::unique_ptr<Expr>;
-	auto parse_expr_primary()->std::unique_ptr<Expr>;
+	//auto parse_expr_unary_prefix(int parent_prec) -> std::unique_ptr<Expr>;
+	//auto parse_expr_unary_postfix(int parent_prec) -> std::unique_ptr<Expr>;
+	//auto parse_expr_binary(int parent_prec)->std::unique_ptr<Expr>;
+	//auto parse_expr_primary()->std::unique_ptr<Expr>;
 	//auto parse_expr(int parent_prec = 0) -> void;
 
 	TokenCursor m_tc;
