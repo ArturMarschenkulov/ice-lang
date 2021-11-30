@@ -163,8 +163,14 @@ static auto get_infix_binding_power(const Token& token) -> BindingPower {
 	Parsing Expressions
 ===========================*/
 
-static auto parse_expr(Parser* self)->std::unique_ptr<Expr>;
+static auto parse_expr(Parser* self) -> std::unique_ptr<Expr>;
+static auto parse_stmt(Parser* self) -> std::unique_ptr<Stmt>;
+
 static auto parse_expr_literal(Parser* self) -> std::unique_ptr<Expr> {
+
+}
+
+static auto parse_expr_block(Parser* self) -> std::unique_ptr<Expr> {
 
 }
 
@@ -198,6 +204,18 @@ static auto parse_expr_primary(Parser* self) -> std::unique_ptr<Expr> {
 		} else {
 			assert(false && "there was a problem!");
 		}
+	} else if (self->m_tc.peek(0).lexeme == "{") {
+		self->m_tc.advance();
+		std::vector<std::unique_ptr<Stmt>> stmts;
+		for(;;) {
+			std::unique_ptr<Stmt> stmt = parse_stmt(self);
+			stmts.push_back(std::move(stmt));
+			if(self->m_tc.peek(0).lexeme == "}") {
+				break;
+			}
+		}
+
+		expr = std::make_unique<ExprBlock>(std::move(stmts));
 	}
 	return expr;
 }
@@ -283,7 +301,7 @@ static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
 
 	self->m_tc.advance(); //skip "var"
 	Token ident = self->m_tc.peek(0); // peek identifier
-	self->m_tc.advance(); //skip "n"
+	self->m_tc.advance(); //skip identifier
 
 	auto t = self->m_tc.peek(0).lexeme;
 	if (t == ":=") {
@@ -292,6 +310,9 @@ static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
 	}
 	std::unique_ptr<Expr> expr = parse_expr(self);
 	std::unique_ptr<Stmt> stmt = std::make_unique<StmtDeclVar>(ident, std::move(expr));
+	
+	assert(self->m_tc.peek(0).lexeme == ";");
+	self->m_tc.advance(); // skip ";"
 
 	if (g_symbol_table.contains(ident.lexeme) == true) {
 		//TODO: Made here an error? Multiple declaration
@@ -328,7 +349,7 @@ auto Parser::parse_tokens(const std::vector<Token>& tokens) -> std::vector<std::
 	while (true) {
 		std::unique_ptr<Stmt> stmt = parse_stmt(this);
 		stmts.emplace_back(std::move(stmt));
-		m_tc.advance();
+		//m_tc.advance();
 
 		if (m_tc.peek(0).type == Token::TYPE::SKW_EOF) {
 			break;

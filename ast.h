@@ -45,6 +45,10 @@ public:
 	virtual auto accept(Visitor&) const -> void = 0;
 };
 
+/*===========================
+	Expressions
+===========================*/
+
 //NOTE: numeric, string/char, boolean, null
 class ExprLiteral : public Expr {
 public:
@@ -131,19 +135,21 @@ public:
 
 class ExprBlock : public Expr {
 public:
-	ExprBlock(std::vector<std::unique_ptr<Stmt>> stmts)
-		/*: m_stmts(stmts)*/ {
+	ExprBlock(std::vector<std::unique_ptr<Stmt>>&& stmts)
+		: m_stmts(std::move(stmts)) {
 	}
 	virtual auto accept(Visitor& visitor) const -> void override {
 		visitor.visit(*this);
 
 	}
-	//std::vector<std::unique_ptr<Stmt>> m_stmts;
-	//std::unique_ptr<Expr> m_expr; //optional return expression
+	std::vector<std::unique_ptr<Stmt>> m_stmts;
+	std::unique_ptr<Expr> m_expr; //optional return expression
 
 };
 
-
+/*===========================
+	Statements
+===========================*/
 
 class StmtExpression : public Stmt {
 public:
