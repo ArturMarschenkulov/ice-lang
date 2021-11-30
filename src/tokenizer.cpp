@@ -201,9 +201,9 @@ static auto escape_if_escape_string(const std::string& str) -> std::string {
 
 Tokenizer::Tokenizer() {
 
-	m_keyword_map["func"] = Token::TYPE::KW_FUNC;
-	m_keyword_map["return"] = Token::TYPE::KW_RETURN;
 	m_keyword_map["var"] = Token::TYPE::KW_VAR;
+	m_keyword_map["fn"] = Token::TYPE::KW_FN;
+	m_keyword_map["return"] = Token::TYPE::KW_RETURN;
 
 	m_keyword_map["true"] = Token::TYPE::L_TRUE;
 	m_keyword_map["false"] = Token::TYPE::L_FALSE;

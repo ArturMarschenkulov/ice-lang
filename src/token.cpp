@@ -4,7 +4,7 @@
 static auto to_string(Token::TYPE token_type) -> std::string {
 	switch (token_type) {
 
-	case Token::TYPE::KW_FUNC: return "KW_FUNC"; break;
+	case Token::TYPE::KW_FN: return "KW_FN"; break;
 	case Token::TYPE::KW_VAR: return "KW_VAR"; break;
 	case Token::TYPE::KW_RETURN: return "KW_RETURN"; break;
 

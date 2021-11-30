@@ -295,24 +295,17 @@ static auto parse_expr(Parser* self) -> std::unique_ptr<Expr> {
 ===========================*/
 
 static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
-	if (self->m_tc.peek(0).type != Token::TYPE::KW_VAR) {
-		return nullptr;
-	}
+	self->m_tc.skip_if(Token::TYPE::KW_VAR);
 
-	self->m_tc.advance(); //skip "var"
 	Token ident = self->m_tc.peek(0); // peek identifier
-	self->m_tc.advance(); //skip identifier
+	self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER);
 
-	auto t = self->m_tc.peek(0).lexeme;
-	if (t == ":=") {
-		self->m_tc.advance();
+	self->m_tc.skip_if(":=");
 
-	}
 	std::unique_ptr<Expr> expr = parse_expr(self);
 	std::unique_ptr<Stmt> stmt = std::make_unique<StmtDeclVar>(ident, std::move(expr));
 	
-	assert(self->m_tc.peek(0).lexeme == ";");
-	self->m_tc.advance(); // skip ";"
+	self->m_tc.skip_if(";");
 
 	if (g_symbol_table.contains(ident.lexeme) == true) {
 		//TODO: Made here an error? Multiple declaration
@@ -322,6 +315,20 @@ static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
 
 
 	return stmt;
+}
+static auto parse_stmt_decl_fn(Parser* self) -> std::unique_ptr<Stmt> {
+	if (self->m_tc.peek(0).type != Token::TYPE::KW_FN) {
+		return nullptr;
+	}
+	self->m_tc.advance(); //skip "fn"
+
+	Token ident = self->m_tc.peek(0); // peek identifier
+	self->m_tc.advance(); //skip identifier
+
+	self->m_tc.advance(); // skip "("
+
+	self->m_tc.advance(); // skip ")"
+
 }
 static auto parse_stmt(Parser* self) -> std::unique_ptr<Stmt> {
 	std::unique_ptr<Stmt> stmt;

@@ -36,7 +36,7 @@ public:
 	enum class TYPE {
 		//KEYWORDS
 		KW_VAR,
-		KW_FUNC,
+		KW_FN,
 		KW_RETURN,
 		KW_I8, KW_I16, KW_I32, KW_I64, KW_I128,
 		KW_U8, KW_U16, KW_U32, KW_U64, KW_U128,

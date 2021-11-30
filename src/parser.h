@@ -7,6 +7,7 @@
 #include <memory>
 #include <iostream>
 #include <string>
+#include <cassert>
 
 
 
@@ -86,7 +87,7 @@ static auto get_binary_operator_precedence(const Token& token) -> int {
 }
 
 struct TokenCursor {
-	TokenCursor() {
+	TokenCursor(): m_it(nullptr) {
 	}
 
 	TokenCursor(const TokenCursor& o) {
@@ -113,20 +114,41 @@ struct TokenCursor {
 	}
 
 	auto expect(const std::string& expected_lexeme/*, const std::string& error_string*/) const -> void {
-		if(expected_lexeme != this->peek(0).lexeme) {
-			std::cout << "Expected " << expected_lexeme << ", but got" << this->peek(0).lexeme << std::endl;
+		if (expected_lexeme != this->peek(0).lexeme) {
+			std::cout << "Expected \"" << expected_lexeme << "\", but got \"" << this->peek(0).lexeme << "\""<< std::endl;
 		}
 	}
-	//auto match(Token::TYPE type) const -> bool {
-	//	return this->peek(0).type == type;
-	//}
-	auto match(std::initializer_list<Token::TYPE> types) -> bool {
+	auto match(std::initializer_list<Token::TYPE> types) const -> bool {
 		for (const Token::TYPE& type : types) {
-			if (this->peek(0).type == type && !this->is_at_end()) {
+			if (this->is_at_end()) return false;
+
+			if (this->peek(0).type == type) {
 				return true;
 			}
 		}
 		return false;
+	}
+	auto skip_if(const Token::TYPE& s) -> bool {
+		bool result = false;
+		if (s == this->peek(0).type) {
+			result = true;
+			this->advance();
+		} else {
+			//std::cout << "expected \"" << to_string(s) << "\", but got \"" << std::endl;
+			assert(false);
+		}
+		return result;
+	}
+	auto skip_if(const std::string& s) -> bool {
+		bool result = false;
+		if (s == this->peek(0).lexeme) {
+			result = true;
+			this->advance();
+		} else {
+			std::cout << "expected \"" << s << "\", but got \"" << this->peek(0).lexeme << "\""<< std::endl;
+			assert(false);
+		}
+		return result;
 	}
 private:
 	mutable const Token* m_it;
@@ -134,7 +156,7 @@ private:
 
 class Parser {
 public:
-	auto parse_tokens(const std::vector<Token>& tokens) ->std::vector<std::unique_ptr<Stmt>>;
+	auto parse_tokens(const std::vector<Token>& tokens)->std::vector<std::unique_ptr<Stmt>>;
 
 	TokenCursor m_tc;
 };
