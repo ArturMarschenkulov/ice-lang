@@ -1,11 +1,12 @@
 #pragma once
 
 #include "token.h"
-#include "expr.h"
-#include "stmt.h"
+#include "ast.h"
 
 #include <vector>
 #include <memory>
+#include <iostream>
+#include <string>
 
 
 
@@ -111,11 +112,14 @@ struct TokenCursor {
 		return this->peek(0).type == Token::TYPE::SKW_EOF;
 	}
 
-	auto expect() const -> void {
+	auto expect(const std::string& expected_lexeme/*, const std::string& error_string*/) const -> void {
+		if(expected_lexeme != this->peek(0).lexeme) {
+			std::cout << "Expected " << expected_lexeme << ", but got" << this->peek(0).lexeme << std::endl;
+		}
 	}
-	auto match(Token::TYPE type) const -> bool {
-		return this->peek(0).type == type;
-	}
+	//auto match(Token::TYPE type) const -> bool {
+	//	return this->peek(0).type == type;
+	//}
 	auto match(std::initializer_list<Token::TYPE> types) -> bool {
 		for (const Token::TYPE& type : types) {
 			if (this->peek(0).type == type && !this->is_at_end()) {
@@ -130,14 +134,7 @@ private:
 
 class Parser {
 public:
-	auto parse_tokens(const std::vector<Token>& tokens) -> void;
-
-	
-	//auto parse_expr_unary_prefix(int parent_prec) -> std::unique_ptr<Expr>;
-	//auto parse_expr_unary_postfix(int parent_prec) -> std::unique_ptr<Expr>;
-	//auto parse_expr_binary(int parent_prec)->std::unique_ptr<Expr>;
-	//auto parse_expr_primary()->std::unique_ptr<Expr>;
-	//auto parse_expr(int parent_prec = 0) -> void;
+	auto parse_tokens(const std::vector<Token>& tokens) ->std::vector<std::unique_ptr<Stmt>>;
 
 	TokenCursor m_tc;
 };

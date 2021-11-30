@@ -32,9 +32,7 @@ add_executable(${PROJECT_NAME}
     token.cpp
     parser.h
     parser.cpp
-    expr.h
-    stmt.h
-    #decl.h
+    ast.h
     ast_printer.h
 )
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "parser.h"
-#include "expr.h"
+#include "ast.h"
 
 #include <vector>
 #include <sstream>
@@ -47,14 +47,14 @@
 */
 class ASTPrinter : public Expr::Visitor, public Stmt::Visitor {
 public:
-	auto print(std::unique_ptr<Expr>& expr) -> std::string {
+	auto print(const std::unique_ptr<Expr>& expr) -> std::string {
 		stream << indent;
 		expr->accept(*this);
 		stream << '\n';
 		return stream.str();
 	}
 
-	auto print(std::unique_ptr<Stmt>& stmt) -> std::string {
+	auto print(const std::unique_ptr<Stmt>& stmt) -> std::string {
 		stream << indent;
 		stmt->accept(*this);
 		stream << '\n';
@@ -86,8 +86,8 @@ public:
 
 		stream << indent_str; stream << "ExprUnaryPrefix"; stream << "\n";
 		//expr.left->accept(*this); //stream << "\n";
-		stream << /*"     " <<*/ indent_str; stream << "Token " << expr.op.lexeme; stream << "\n";
-		expr.expr->accept(*this); //stream << "\n";
+		stream << /*"     " <<*/ indent_str; stream << "Token " << expr.m_op.lexeme; stream << "\n";
+		expr.m_expr->accept(*this); //stream << "\n";
 
 		indent_level--;
 	}
@@ -97,8 +97,8 @@ public:
 
 
 		stream << indent_str; stream << "ExprUnaryPostfix"; stream << "\n";
-		expr.expr->accept(*this); //stream << "\n";
-		stream << /*"     " <<*/ indent_str; stream << "Token " << expr.op.lexeme; stream << "\n";
+		expr.m_expr->accept(*this); //stream << "\n";
+		stream << /*"     " <<*/ indent_str; stream << "Token " << expr.m_op.lexeme; stream << "\n";
 
 		indent_level--;
 	}
@@ -107,10 +107,27 @@ public:
 		std::string indent_str = get_indent();
 
 		stream << indent_str; stream << "ExprGrouping"; stream << "\n";
-		expr.expr->accept(*this); //stream << "\n";
+		expr.m_expr->accept(*this); //stream << "\n";
 
 		indent_level--;
 	}
+
+	virtual auto visit(const ExprVariable& expr) -> void override {
+		std::string indent_str = get_indent();
+
+		stream << indent_str; stream << "ExprVariable " << expr.m_variable.lexeme << "\n";
+		//expr.m_expr->accept(*this);
+
+
+		indent_level--;
+	}
+	virtual auto visit(const ExprBlock& expr) -> void override {
+		//TODO: implement!
+	}
+
+
+
+
 
 	virtual auto visit(const StmtExpression& expr) -> void override {
 		std::string indent_str = get_indent();
@@ -129,6 +146,10 @@ public:
 
 		indent_level--;
 	}
+	virtual auto visit(const StmtDeclFn& expr) -> void override {
+		//TODO: implement!
+	}
+
 
 
 

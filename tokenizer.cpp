@@ -222,7 +222,7 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 
 	while (cur_cur.peek(0) != '\0') {
 		start_cur = cur_cur;
-		Token token = scan_token(cur_cur.peek(0), start_cur, cur_cur);
+		Token token = this->scan_token(cur_cur.peek(0), start_cur, cur_cur);
 
 		// Handle whitespace attribute
 		{
@@ -271,12 +271,10 @@ auto Tokenizer::scan_tokens(const std::string& source) const -> const std::vecto
 }
 
 auto Tokenizer::scan_token(const char c, CharCursor& start_cursor, CharCursor& current_cursor) const -> const Token {
-	const Token::TYPE token_type = determine_token_type(c, current_cursor);
-	const Token token = create_token_from_type(token_type, start_cursor, current_cursor);
+	const Token::TYPE token_type = this->determine_token_type(c, current_cursor);
+	const Token token = this->create_token_from_type(token_type, start_cursor, current_cursor);
 	return token;
 }
-
-
 auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) const -> const Token::TYPE {
 	Token::TYPE token_type;
 	switch (c) {
@@ -307,22 +305,23 @@ auto Tokenizer::determine_token_type(const char c, CharCursor& current_cursor) c
 		case '\n': token_type = Token::TYPE::SKW_NEWLINE; break;
 
 		case '\"':
+		//case '"':
 		{
-			token_type = lex_string(current_cursor);
-		} break;		
+			token_type = this->lex_string(current_cursor);
+		} break;
 		case '\'':
 		{
-
+			token_type = this->lex_char(current_cursor);
 		} break;
 
 		default:
 		{
 			if (is_punctuator(c)) {
-				token_type = lex_punctuator(current_cursor);
+				token_type = this->lex_punctuator(current_cursor);
 			} else if (is_digit(c)) {
-				token_type = lex_number(current_cursor);
+				token_type = this->lex_number(current_cursor);
 			} else if (is_alpha(c)) {
-				token_type = lex_identifier(current_cursor);
+				token_type = this->lex_identifier(current_cursor);
 			} else {
 				token_type = Token::TYPE::SKW_UNKNOWN;
 			}
@@ -405,8 +404,23 @@ auto Tokenizer::lex_identifier(CharCursor& current_cursor) const -> const Token:
 	}
 	return token_type;
 }
-auto Tokenizer::lex_string(CharCursor& current_cursor) const -> void {
 
+auto Tokenizer::lex_string(CharCursor& current_cursor) const -> const Token::TYPE {
+	//NOTE: escape characters
+	while (current_cursor.peek(1) != '\"') {
+		current_cursor.advance();
+	}
+	current_cursor.advance();
+	return Token::TYPE::L_STRING;
+}
+
+auto Tokenizer::lex_char(CharCursor& current_cursor) const -> const Token::TYPE {
+	//NOTE: escape characters
+	while (current_cursor.peek(1) != '\'') {
+		current_cursor.advance();
+	}
+	current_cursor.advance();
+	return Token::TYPE::L_CHAR;
 }
 
 

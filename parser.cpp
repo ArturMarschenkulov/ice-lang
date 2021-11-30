@@ -1,35 +1,14 @@
 #include "parser.h"
 #include "token.h"
-#include "ast_printer.h"
+
 #include <iostream>
 #include <ostream>
 #include <cassert>
+#include <utility>
 
 
 /*
 Grammar notation remainder
-
-
-RULE
-	= 'r'+
-same as
-RULE
-	= 'r' RULE
-	| 'r'
-
-RULE
-	= 'r'*
-
-RULE
-	= 'r'
-	|
-
-same as
-
-RULE
-	= RULE+
-
-
 
 ... = something
 
@@ -92,6 +71,24 @@ stmt
 
 
 
+class SymbolTable {
+public:
+	auto contains(const std::string symbol) -> bool {
+		bool found = false;
+		for (int i = 0; i < m_symbols.size(); i++) {
+			if (m_symbols[i] == symbol) {
+				found = true;
+			}
+		}
+		return found;
+	}
+	auto add(const std::string symbol) -> void {
+		m_symbols.push_back(symbol);
+	}
+public:
+	std::vector<std::string> m_symbols;
+};
+SymbolTable g_symbol_table;
 
 
 struct BindingPower {
@@ -108,10 +105,33 @@ struct BindingPower {
 };
 
 static auto get_infix_binding_power(const Token& token) -> BindingPower {
-	BindingPower binding_power;
 	if (token.type != Token::TYPE::S_PUNCTUATOR) {
 		return { 0, 0 };
 	};
+
+	enum class ASSOCIATIVITY {
+		LEFT,
+		RIGHT,
+		//NONE,
+	};
+
+	auto get_asso = [](ASSOCIATIVITY asso) -> std::pair<float, float> {
+		switch (asso) {
+			case ASSOCIATIVITY::LEFT:
+			{
+				return { 1.0f, 0.0f };
+			} break;
+			case ASSOCIATIVITY::RIGHT:
+			{
+				return { 0.0f, 1.0f };
+			} break;
+			default: assert(false);
+		}
+	};
+
+
+	BindingPower binding_power;
+
 
 	const std::string& op = token.lexeme;
 	const float eps = 0.1f;
@@ -127,6 +147,14 @@ static auto get_infix_binding_power(const Token& token) -> BindingPower {
 		) {
 		const float prec = 4.0f;
 		binding_power = { prec, prec + eps };
+	} else if (
+		op == "="
+		) {
+		ASSOCIATIVITY asso = ASSOCIATIVITY::RIGHT;
+		const float prec = 1.0f;
+
+		auto [fl, fr] = get_asso(asso);
+		binding_power = { prec - fl * eps, prec + fr * eps };
 	}
 
 }
@@ -143,14 +171,23 @@ static auto parse_expr_literal(Parser* self) -> std::unique_ptr<Expr> {
 static auto parse_expr_primary(Parser* self) -> std::unique_ptr<Expr> {
 	std::unique_ptr<Expr> expr;
 
-	if (self->m_tc.match({ Token::TYPE::L_INTEGER, Token::TYPE::L_FLOAT })) {
-		const Token lit = self->m_tc.peek(0); 
-		self->m_tc.advance();
-		expr = std::make_unique<ExprLiteral>(lit.lexeme);
-	} else if (self->m_tc.match({ Token::TYPE::L_TRUE, Token::TYPE::L_FALSE })) {
+	if (self->m_tc.match(
+		{
+			Token::TYPE::L_INTEGER, Token::TYPE::L_FLOAT,
+			Token::TYPE::L_TRUE, Token::TYPE::L_FALSE,
+			Token::TYPE::L_STRING, Token::TYPE::L_CHAR
+		})) {
 		const Token lit = self->m_tc.peek(0);
 		self->m_tc.advance();
 		expr = std::make_unique<ExprLiteral>(lit.lexeme);
+	} else if (self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER) {
+		const Token var = self->m_tc.peek(0);
+		if (g_symbol_table.contains(var.lexeme) == false) {
+			//TODO: Error. Variable not declared.
+			assert(false && "not declared variable");
+		}
+		self->m_tc.advance();
+		expr = std::make_unique<ExprVariable>(var);
 	} else if (self->m_tc.peek(0).lexeme == "(") {
 		self->m_tc.advance();
 		expr = parse_expr(self);
@@ -243,6 +280,7 @@ static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
 	if (self->m_tc.peek(0).type != Token::TYPE::KW_VAR) {
 		return nullptr;
 	}
+
 	self->m_tc.advance(); //skip "var"
 	Token ident = self->m_tc.peek(0); // peek identifier
 	self->m_tc.advance(); //skip "n"
@@ -254,6 +292,13 @@ static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
 	}
 	std::unique_ptr<Expr> expr = parse_expr(self);
 	std::unique_ptr<Stmt> stmt = std::make_unique<StmtDeclVar>(ident, std::move(expr));
+
+	if (g_symbol_table.contains(ident.lexeme) == true) {
+		//TODO: Made here an error? Multiple declaration
+	} else {
+		g_symbol_table.add(ident.lexeme);
+	}
+
 
 	return stmt;
 }
@@ -268,79 +313,30 @@ static auto parse_stmt(Parser* self) -> std::unique_ptr<Stmt> {
 			self->m_tc.advance();
 			stmt = std::make_unique<StmtExpression>(std::move(expr));
 		} else {
-			assert(false && "there was a problem!");
+			self->m_tc.expect(";");
 		}
 	}
 	return stmt;
 }
 
 
-auto Parser::parse_tokens(const std::vector<Token>& tokens) -> void {
-	//TokenCursor tc = { tokens };
+auto Parser::parse_tokens(const std::vector<Token>& tokens) -> std::vector<std::unique_ptr<Stmt>> {
 	m_tc = { tokens };
 
 
+	std::vector<std::unique_ptr<Stmt>> stmts;
+	while (true) {
+		std::unique_ptr<Stmt> stmt = parse_stmt(this);
+		stmts.emplace_back(std::move(stmt));
+		m_tc.advance();
 
-	std::unique_ptr<Stmt> stmt = parse_stmt(this);
+		if (m_tc.peek(0).type == Token::TYPE::SKW_EOF) {
+			break;
+		}
+	}
 
-	ASTPrinter printer;
-	printer.print(stmt);
-	std::cout << printer.stream.str() << std::endl;
+
+
+	return stmts;
 
 }
-//auto Parser::parse_expr_unary_prefix(int parent_prec) -> std::unique_ptr<Expr> {
-//
-//	Token op = m_tc.peek(0); m_tc.advance();
-//	if (op.whitespace.right == true) {
-//		std::cout << "error: unary operator cannot be separated from its operand" << std::endl;
-//		assert(false && "error: unary operator cannot be separated from its operand\n");
-//	}
-//	if (m_tc.peek(1).type == Token::TYPE::S_PUNCTUATOR) {
-//
-//	}
-//	std::unique_ptr<Expr> right = this->parse_expr_binary(parent_prec);
-//	auto expr = std::make_unique<ExprUnaryPrefix>(op, std::move(right));
-//	return expr;
-//}
-//auto Parser::parse_expr_unary_postfix(int parent_prec) -> std::unique_ptr<Expr> {
-//
-//	auto op = m_tc.peek(1);
-//	std::unique_ptr<Expr> left = this->parse_expr_binary(parent_prec);
-//	auto expr = std::make_unique<ExprUnaryPostfix>(std::move(left), op);
-//	return expr;
-//}
-//
-//auto Parser::parse_expr_binary(int parent_prec) -> std::unique_ptr<Expr> {
-//
-//	//auto e = parse_expr_unary_prefix_(this);
-//	std::unique_ptr<Expr> left;
-//	int un_op_prec = get_unary_operator_precedence(m_tc.peek(0));
-//	if (un_op_prec != 0 && un_op_prec >= parent_prec) {
-//		left = this->parse_expr_unary_prefix(un_op_prec);
-//	} else {
-//		left = this->parse_expr_primary();
-//	}
-//
-//
-//
-//	while (true) {
-//		int bin_op_prec = get_binary_operator_precedence(m_tc.peek(0));
-//		if (bin_op_prec == 0 || bin_op_prec <= parent_prec) {
-//			break;
-//		}
-//		const Token op = m_tc.peek(0); m_tc.advance();
-//		std::unique_ptr<Expr> right = this->parse_expr_binary(bin_op_prec);
-//		left = std::make_unique<ExprBinary>(std::move(left), op, std::move(right));
-//	}
-//
-//	return left;
-//}
-//
-//auto Parser::parse_expr_primary() -> std::unique_ptr<Expr> {
-//	std::unique_ptr<Expr> expr;
-//	if (m_tc.match({ Token::TYPE::L_INTEGER })) {
-//		const Token lit = m_tc.peek(0); m_tc.advance();
-//		expr = std::make_unique<ExprLiteral>(lit.lexeme);
-//	}
-//	return expr;
-//}

@@ -20,6 +20,7 @@
     - [Parametric Polymorphism](#parametric-polymorphism)
 - [Code Examples](#code-examples)
   - [Stack](#stack)
+  - [Hash](#hash)
 
 # Stage 0: Big picture
 
@@ -230,4 +231,14 @@ impl Stack<T> {
 }
 ```
 
+## Hash
 
+```
+fn djb2(data: []u8): u32 {
+    var hash: u32 = 5381;
+    for var i := 0; i < data.size(); i++ {
+        hash = (hash << 5) + hash + data[i] as u32;
+    }
+    hash
+}
+```
