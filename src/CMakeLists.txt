@@ -1,11 +1,5 @@
-cmake_minimum_required(VERSION 3.13.4)
 
-project(ice-lang) # "${PROJECT_NAME}"
 
-set(CMAKE_CXX_STANDARD 23)
-
-set(BUILD_ARCH "-m64")
-set(TARGET_64 ON)
 
 # import LLVM
 set(LLVM_DIR "C:/DEV/llvm-project/build/lib/cmake/llvm")
@@ -35,10 +29,6 @@ add_executable(${PROJECT_NAME}
     ast.h
     ast_printer.h
 )
-
-
-# execute_process(COMMAND llvm-config --libs core support
-#                 OUTPUT_VARIABLE llvm_libs)
 
 llvm_map_components_to_libnames(llvm_libs
     core
