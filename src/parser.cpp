@@ -1,11 +1,10 @@
 #include "parser.h"
 #include "token.h"
 
+#include <cassert>
 #include <iostream>
 #include <ostream>
-#include <cassert>
 #include <utility>
-
 
 /*
 Grammar notation remainder
@@ -18,353 +17,370 @@ Grammar notation remainder
 */
 
 /*
-0
+stmt_decl_var
+    = 'var' ident ':' (type) '=' expr ';'
+
+stmt_decl_fn
+    = 'fn' ident '(' (ident ':' type (',' ident ':' type)*)? ')' ':' type '{' stmt* '}'
+    | 'fn' ident '(' ')' ':' type '{' '}'
+
+stmt
+    = stmt_decl_var
+    | stmt_decl_fn
+
 expr
-	= expr_prefix (expr_binary)
+    = expr_prefix (expr_binary)
 
 list_expr
-	= expr
-	| expr ',' list_expr
+    = expr
+    | expr ',' list_expr
 
 expr_binary
-	= op_binary expr_prefix
-	| expr_binary (expr_binary)
-	| expr_binary*
+    = op_binary expr_prefix
+    | expr_binary (expr_binary)
+    | expr_binary*
 
 expr_prefix
-	= (op_prefix) expr_postfix
+    = (op_prefix) expr_postfix
 
 expr_postfix
-	= expr_primary
-	| expr_postfix op_postfix
+    = expr_primary
+    | expr_postfix op_postfix
 
 expr_primary
-	= expr_literal
-	| expr_group
+    = expr_literal
+    | expr_group
 
 */
-
-
 
 /*
 ideal grammar:
 
 op
-	= ...
+        = ...
 
 
 expr
-	= expr_literal
-	| expr_binary
-	| expr
+    = expr_literal
+    | expr_binary
+    | expr
 
 
 expr_binary
-	= expr OP expr
+        = expr OP expr
 
 expr_bin
 
 
 stmt
-	= expr ';'
+        = expr ';'
 */
-
-
 
 class SymbolTable {
 public:
-	auto contains(const std::string symbol) -> bool {
-		bool found = false;
-		for (int i = 0; i < m_symbols.size(); i++) {
-			if (m_symbols[i] == symbol) {
-				found = true;
-			}
-		}
-		return found;
-	}
-	auto add(const std::string symbol) -> void {
-		m_symbols.push_back(symbol);
-	}
+    auto contains(const std::string symbol) -> bool {
+        bool found = false;
+        for (int i = 0; i < m_symbols.size(); i++) {
+            if (m_symbols[i] == symbol) { found = true; }
+        }
+        return found;
+    }
+    auto add(const std::string symbol) -> void { m_symbols.push_back(symbol); }
+
 public:
-	std::vector<std::string> m_symbols;
+    std::vector<std::string> m_symbols;
 };
 SymbolTable g_symbol_table;
 
-
 struct BindingPower {
-	float left = 0.0f;
-	float right = 0.0f;
+    float left = 0.0f;
+    float right = 0.0f;
 
-	auto is_zero() -> bool {
-		if (left == 0.0f && right == 0.0f) {
-			return true;
-		} else {
-			return false;
-		}
-	}
+    auto is_zero() -> bool {
+        if (left == 0.0f && right == 0.0f) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 };
 
 static auto get_infix_binding_power(const Token& token) -> BindingPower {
-	if (token.type != Token::TYPE::S_PUNCTUATOR) {
-		return { 0, 0 };
-	};
+    if (token.type != Token::TYPE::S_PUNCTUATOR) { return {0, 0}; };
 
-	enum class ASSOCIATIVITY {
-		LEFT,
-		RIGHT,
-		//NONE,
-	};
+    enum class ASSOCIATIVITY {
+        LEFT,
+        RIGHT,
+        // NONE,
+    };
 
-	auto get_asso = [](ASSOCIATIVITY asso) -> std::pair<float, float> {
-		switch (asso) {
-			case ASSOCIATIVITY::LEFT:
-			{
-				return { 1.0f, 0.0f };
-			} break;
-			case ASSOCIATIVITY::RIGHT:
-			{
-				return { 0.0f, 1.0f };
-			} break;
-			default: assert(false);
-		}
-	};
+    auto get_asso = [](ASSOCIATIVITY asso) -> std::pair<float, float> {
+        switch (asso) {
+            case ASSOCIATIVITY::LEFT: {
+                return {1.0f, 0.0f};
+            } break;
+            case ASSOCIATIVITY::RIGHT: {
+                return {0.0f, 1.0f};
+            } break;
+            default: assert(false);
+        }
+    };
 
+    BindingPower binding_power;
 
-	BindingPower binding_power;
+    const std::string& op = token.lexeme;
+    const float        eps = 0.1f;
+    if (op == "*" || op == "/") {
+        float prec = 5.0f;
+        binding_power = {prec, prec + eps};
+    } else if (op == "+" || op == "-") {
+        const float prec = 4.0f;
+        binding_power = {prec, prec + eps};
+    } else if (op == "=") {
+        ASSOCIATIVITY asso = ASSOCIATIVITY::RIGHT;
+        const float   prec = 1.0f;
 
-
-	const std::string& op = token.lexeme;
-	const float eps = 0.1f;
-	if (
-		op == "*" ||
-		op == "/"
-		) {
-		float prec = 5.0f;
-		binding_power = { prec, prec + eps };
-	} else if (
-		op == "+" ||
-		op == "-"
-		) {
-		const float prec = 4.0f;
-		binding_power = { prec, prec + eps };
-	} else if (
-		op == "="
-		) {
-		ASSOCIATIVITY asso = ASSOCIATIVITY::RIGHT;
-		const float prec = 1.0f;
-
-		auto [fl, fr] = get_asso(asso);
-		binding_power = { prec - fl * eps, prec + fr * eps };
-	}
-
+        auto [fl, fr] = get_asso(asso);
+        binding_power = {prec - fl * eps, prec + fr * eps};
+    }
 }
 
 /*===========================
-	Parsing Expressions
+        Parsing Expressions
 ===========================*/
 
 static auto parse_expr(Parser* self) -> std::unique_ptr<Expr>;
 static auto parse_stmt(Parser* self) -> std::unique_ptr<Stmt>;
 
 static auto parse_expr_literal(Parser* self) -> std::unique_ptr<Expr> {
+    std::unique_ptr<Expr> expr;
+    const Token&          lit = self->m_tc.advance();
+    expr = std::make_unique<ExprLiteral>(lit.lexeme);
+    return expr;
+}
+static auto parse_expr_variable(Parser* self) -> std::unique_ptr<Expr> {
+    std::unique_ptr<Expr> expr;
+    const Token           var = self->m_tc.advance();
+    if (g_symbol_table.contains(var.lexeme) == false) {
+        // TODO: Error. Variable not declared.
+        assert(false && "not declared variable");
+    }
+    expr = std::make_unique<ExprVariable>(var);
+    return expr;
+}
 
+static auto parse_expr_grouping(Parser* self) -> std::unique_ptr<Expr> {
+    std::unique_ptr<Expr> expr;
+    self->m_tc.consume("(");
+    expr = parse_expr(self);
+    // self->m_tc.consume
+    if (self->m_tc.peek(0).lexeme == ")") {
+        self->m_tc.advance();
+        expr = std::make_unique<ExprGrouping>(std::move(expr));
+    } else {
+        assert(false && "there was a problem!");
+    }
+    return expr;
 }
 
 static auto parse_expr_block(Parser* self) -> std::unique_ptr<Expr> {
+    auto should_add = [](Parser* self) -> bool {
+        int  n = 0;
+        auto token = self->m_tc.peek(n);
+        while (token.lexeme != "}") {
+            if (token.lexeme == ";") { return true; }
+            n += 1;
+            token = self->m_tc.peek(n);
+        }
+        return false;
+    };
+    assert(self->m_tc.peek(0).lexeme == "{");
+    self->m_tc.consume("{");
 
+    std::vector<std::unique_ptr<Stmt>> statements;
+    while (self->m_tc.peek(0).lexeme != "}") {
+        if (self->m_tc.is_at_end()) { break; }
+
+        if (should_add(self)) {
+            statements.push_back(parse_stmt(self));
+        } else {
+            break;
+        }
+    }
+
+    std::unique_ptr<Expr> optional_expr;
+    if (self->m_tc.peek(0).lexeme == "}") {
+        optional_expr = nullptr;
+    } else {
+        optional_expr = parse_expr(self);
+    }
+
+    auto expr = std::make_unique<ExprBlock>(std::move(statements), std::move(optional_expr));
+    self->m_tc.consume("}");
+    return expr;
 }
 
 static auto parse_expr_primary(Parser* self) -> std::unique_ptr<Expr> {
-	std::unique_ptr<Expr> expr;
+    std::unique_ptr<Expr> expr;
 
-	if (self->m_tc.match(
-		{
-			Token::TYPE::L_INTEGER, Token::TYPE::L_FLOAT,
-			Token::TYPE::L_TRUE, Token::TYPE::L_FALSE,
-			Token::TYPE::L_STRING, Token::TYPE::L_CHAR
-		})) {
-		const Token lit = self->m_tc.peek(0);
-		self->m_tc.advance();
-		expr = std::make_unique<ExprLiteral>(lit.lexeme);
-	} else if (self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER) {
-		const Token var = self->m_tc.peek(0);
-		if (g_symbol_table.contains(var.lexeme) == false) {
-			//TODO: Error. Variable not declared.
-			assert(false && "not declared variable");
-		}
-		self->m_tc.advance();
-		expr = std::make_unique<ExprVariable>(var);
-	} else if (self->m_tc.peek(0).lexeme == "(") {
-		self->m_tc.advance();
-		expr = parse_expr(self);
-		//self->m_tc.consume
-		if (self->m_tc.peek(0).lexeme == ")") {
-			self->m_tc.advance();
-			expr = std::make_unique<ExprGrouping>(std::move(expr));
-		} else {
-			assert(false && "there was a problem!");
-		}
-	} else if (self->m_tc.peek(0).lexeme == "{") {
-		self->m_tc.advance();
-		std::vector<std::unique_ptr<Stmt>> stmts;
-		for(;;) {
-			std::unique_ptr<Stmt> stmt = parse_stmt(self);
-			stmts.push_back(std::move(stmt));
-			if(self->m_tc.peek(0).lexeme == "}") {
-				break;
-			}
-		}
+    if (self->m_tc.match(
+            {Token::TYPE::L_INTEGER, Token::TYPE::L_FLOAT, Token::TYPE::L_TRUE, Token::TYPE::L_FALSE,
+             Token::TYPE::L_STRING, Token::TYPE::L_CHAR})) {
+        expr = parse_expr_literal(self);
+    } else if (self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER) {
+        expr = parse_expr_variable(self);
+    } else if (self->m_tc.peek(0).lexeme == "(") {
+        expr = parse_expr_grouping(self);
+    } else if (self->m_tc.peek(0).lexeme == "{") {
+        expr = parse_expr_block(self);
+    }
 
-		expr = std::make_unique<ExprBlock>(std::move(stmts));
-	}
-	return expr;
+    return expr;
 }
 
-
 static auto parse_expr_unary_postfix(Parser* self) -> std::unique_ptr<Expr> {
-	std::unique_ptr<Expr> expr;
-	if (self->m_tc.peek(1).type == Token::TYPE::S_PUNCTUATOR) {
-		Token op = self->m_tc.peek(1);
-		//check whether it qualifies as a postfix operator
-		if (op.operator_type == Token::OPERATOR_TYPE::POSTFIX) {
-			std::unique_ptr<Expr> inside = parse_expr_primary(self);
-			self->m_tc.advance();
-			expr = std::make_unique<ExprUnaryPostfix>(std::move(inside), op);
-		} else {
-			expr = parse_expr_primary(self);
-		}
+    std::unique_ptr<Expr> expr;
+    if (self->m_tc.peek(1).type == Token::TYPE::S_PUNCTUATOR) {
+        Token op = self->m_tc.peek(1);
+        // check whether it qualifies as a postfix operator
+        if (op.operator_type == Token::OPERATOR_TYPE::POSTFIX) {
+            std::unique_ptr<Expr> inside = parse_expr_primary(self);
+            self->m_tc.advance();
+            expr = std::make_unique<ExprUnaryPostfix>(std::move(inside), op);
+        } else {
+            expr = parse_expr_primary(self);
+        }
 
-	} else {
-		expr = parse_expr_primary(self);
-	}
-	return expr;
+    } else {
+        expr = parse_expr_primary(self);
+    }
+    return expr;
 }
 
 static auto parse_expr_unary_prefix(Parser* self) -> std::unique_ptr<Expr> {
-	std::unique_ptr<Expr> expr;
-	if (self->m_tc.peek(0).type == Token::TYPE::S_PUNCTUATOR) {
-		Token op = self->m_tc.peek(0);
-		//check whether it qualifies as a prefix operator
-		if (op.operator_type == Token::OPERATOR_TYPE::PREFIX) {
-			self->m_tc.advance();
-			std::unique_ptr<Expr> inside = parse_expr_unary_postfix(self);
-			expr = std::make_unique<ExprUnaryPrefix>(op, std::move(inside));
-		} else {
-			assert(false);
-		}
-	} else {
-		expr = parse_expr_unary_postfix(self);
-	}
-	return expr;
+    std::unique_ptr<Expr> expr;
+    if (self->m_tc.peek(0).type == Token::TYPE::S_PUNCTUATOR) {
+        Token op = self->m_tc.peek(0);
+        // check whether it qualifies as a prefix operator
+        if (op.operator_type == Token::OPERATOR_TYPE::PREFIX) {
+            self->m_tc.advance();
+            std::unique_ptr<Expr> inside = parse_expr_unary_postfix(self);
+            expr = std::make_unique<ExprUnaryPrefix>(op, std::move(inside));
+        } else {
+            assert(false);
+        }
+    } else {
+        expr = parse_expr_unary_postfix(self);
+    }
+    return expr;
 }
 
-
-//NOTE: more or less the entry expression function
-//NOTE: Research more about Pratt parsing!!
+// NOTE: more or less the entry expression function
+// NOTE: Research more about Pratt parsing!!
 static auto parse_expr_binary(Parser* self, float prev_bp) -> std::unique_ptr<Expr> {
-	std::unique_ptr<Expr> left;
+    std::unique_ptr<Expr> left;
 
-	int un_op_prec = get_unary_operator_precedence(self->m_tc.peek(0));
-	if (un_op_prec != 0 && un_op_prec >= prev_bp) {
-		left = parse_expr_unary_prefix(self);
-	} else {
-		left = parse_expr_unary_postfix(self);
-	}
+    int un_op_prec = get_unary_operator_precedence(self->m_tc.peek(0));
+    if (un_op_prec != 0 && un_op_prec >= prev_bp) {
+        left = parse_expr_unary_prefix(self);
+    } else {
+        left = parse_expr_unary_postfix(self);
+    }
 
-	while (true) {
-		BindingPower bp = get_infix_binding_power(self->m_tc.peek(0));
-		//int bin_op_prec = get_binary_operator_precedence(self->m_tc.peek(0));
-		if (bp.is_zero() || bp.left <= prev_bp) {
-			break;
-		}
-		const Token op = self->m_tc.peek(0); self->m_tc.advance();
-		std::unique_ptr<Expr> right = parse_expr_binary(self, bp.right);
-		left = std::make_unique<ExprBinary>(std::move(left), op, std::move(right));
-	}
+    while (true) {
+        BindingPower bp = get_infix_binding_power(self->m_tc.peek(0));
+        // int bin_op_prec = get_binary_operator_precedence(self->m_tc.peek(0));
+        if (bp.is_zero() || bp.left <= prev_bp) { break; }
+        const Token           op = self->m_tc.advance();
+        std::unique_ptr<Expr> right = parse_expr_binary(self, bp.right);
+        left = std::make_unique<ExprBinary>(std::move(left), op, std::move(right));
+    }
 
-	return left;
+    return left;
 }
 
 static auto parse_expr(Parser* self) -> std::unique_ptr<Expr> {
-	std::unique_ptr<Expr> expr = parse_expr_binary(self, 0);
-	return expr;
+    std::unique_ptr<Expr> expr = parse_expr_binary(self, 0);
+    return expr;
 }
 
 /*===========================
-	Parsing Statements
+        Parsing Statements
 ===========================*/
 
 static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
-	self->m_tc.skip_if(Token::TYPE::KW_VAR);
+    self->m_tc.consume("var");
 
-	Token ident = self->m_tc.peek(0); // peek identifier
-	self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER);
+    Token ident = self->m_tc.peek(0); // peek identifier
+    if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
+        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER);
+    }
 
-	self->m_tc.skip_if(":=");
+    self->m_tc.consume(":=");
 
-	std::unique_ptr<Expr> expr = parse_expr(self);
-	std::unique_ptr<Stmt> stmt = std::make_unique<StmtDeclVar>(ident, std::move(expr));
-	
-	self->m_tc.skip_if(";");
+    std::unique_ptr<Expr> expr = parse_expr(self);
+    std::unique_ptr<Stmt> stmt = std::make_unique<StmtDeclVar>(ident, std::move(expr));
 
-	if (g_symbol_table.contains(ident.lexeme) == true) {
-		//TODO: Made here an error? Multiple declaration
-	} else {
-		g_symbol_table.add(ident.lexeme);
-	}
+    self->m_tc.consume(";");
 
+    if (g_symbol_table.contains(ident.lexeme) == true) {
+        // TODO: Made here an error? Multiple declaration
+    } else {
+        g_symbol_table.add(ident.lexeme);
+    }
 
-	return stmt;
+    return stmt;
 }
 static auto parse_stmt_decl_fn(Parser* self) -> std::unique_ptr<Stmt> {
-	if (self->m_tc.peek(0).type != Token::TYPE::KW_FN) {
-		return nullptr;
-	}
-	self->m_tc.advance(); //skip "fn"
+    self->m_tc.consume("fn");
 
-	Token ident = self->m_tc.peek(0); // peek identifier
-	self->m_tc.advance(); //skip identifier
+    Token ident = self->m_tc.peek(0); // peek identifier
+    if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
+        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER);
+    }
 
-	self->m_tc.advance(); // skip "("
+    self->m_tc.consume("(");
+    self->m_tc.consume(")");
 
-	self->m_tc.advance(); // skip ")"
-
+    self->m_tc.consume(":");
+    if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
+        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER);
+    }
+    self->m_tc.consume("{");
+    self->m_tc.consume("}");
+    return nullptr;
 }
 static auto parse_stmt(Parser* self) -> std::unique_ptr<Stmt> {
-	std::unique_ptr<Stmt> stmt;
+    std::unique_ptr<Stmt> stmt;
 
-	if (self->m_tc.peek(0).type == Token::TYPE::KW_VAR) {
-		stmt = parse_stmt_decl_var(self);
-	} else {
-		std::unique_ptr<Expr> expr = parse_expr(self);
-		if (self->m_tc.peek(0).lexeme == ";") {
-			self->m_tc.advance();
-			stmt = std::make_unique<StmtExpression>(std::move(expr));
-		} else {
-			self->m_tc.expect(";");
-		}
-	}
-	return stmt;
+    auto kw = self->m_tc.peek(0).type;
+    if (kw == Token::TYPE::KW_VAR) {
+        stmt = parse_stmt_decl_var(self);
+    } else if (self->m_tc.peek(0).type == Token::TYPE::KW_FN) {
+        stmt = parse_stmt_decl_fn(self);
+    } else {
+        std::unique_ptr<Expr> expr = parse_expr(self);
+        if (self->m_tc.peek(0).lexeme == ";") {
+            self->m_tc.advance();
+            stmt = std::make_unique<StmtExpression>(std::move(expr));
+        } else {
+            self->m_tc.expect(";");
+        }
+    }
+    return stmt;
 }
 
-
 auto Parser::parse_tokens(const std::vector<Token>& tokens) -> std::vector<std::unique_ptr<Stmt>> {
-	m_tc = { tokens };
+    m_tc = {tokens};
 
+    std::vector<std::unique_ptr<Stmt>> stmts;
+    while (true) {
+        std::unique_ptr<Stmt> stmt = parse_stmt(this);
+        stmts.emplace_back(std::move(stmt));
+        // m_tc.advance();
 
-	std::vector<std::unique_ptr<Stmt>> stmts;
-	while (true) {
-		std::unique_ptr<Stmt> stmt = parse_stmt(this);
-		stmts.emplace_back(std::move(stmt));
-		//m_tc.advance();
+        if (m_tc.peek(0).type == Token::TYPE::SKW_EOF) { break; }
+    }
 
-		if (m_tc.peek(0).type == Token::TYPE::SKW_EOF) {
-			break;
-		}
-	}
-
-
-
-	return stmts;
-
+    return stmts;
 }

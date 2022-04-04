@@ -4,16 +4,23 @@
   - [? Maybe function overloading](#-maybe-function-overloading)
   - [? Maybe Delayed initialization](#-maybe-delayed-initialization)
 - [Features](#features)
+  - [Functions](#functions)
   - [Named function parameters](#named-function-parameters)
   - [Operator overloading and custom operators](#operator-overloading-and-custom-operators)
   - [Dynamic numerical base](#dynamic-numerical-base)
+  - [Use keyword](#use-keyword)
+  - [Import keyword](#import-keyword)
   - [Switch statements](#switch-statements)
   - [Complex Types](#complex-types)
-    - [Struct](#struct)
-    - [Union](#union)
-    - [C-style Union](#c-style-union)
-    - [Enum](#enum)
-    - [Bitmask](#bitmask)
+    - [Unit Types](#unit-types)
+    - [Product Types](#product-types)
+      - [Tuples](#tuples)
+      - [Struct](#struct)
+    - [Sum Types](#sum-types)
+      - [Union](#union)
+      - [C-style Union](#c-style-union)
+      - [Enum](#enum)
+      - [Bitmask](#bitmask)
     - [Trait](#trait)
       - [Names for traits in other languages](#names-for-traits-in-other-languages)
   - [Polymorphism](#polymorphism)
@@ -21,6 +28,8 @@
 - [Code Examples](#code-examples)
   - [Stack](#stack)
   - [Hash](#hash)
+  - [Sorting](#sorting)
+    - [Quicksort](#quicksort)
 
 # Stage 0: Big picture
 
@@ -68,6 +77,10 @@ To be able to mutate a value, use the keyword `mut` after `var`.
 var mut x := 4;
 x = 4;
 ```
+```
+var x: mut = 4;
+x = 4;
+```
 ## ? Maybe function overloading
 
 ## ? Maybe Delayed initialization
@@ -92,6 +105,32 @@ y = 4; // Error. Can't mutate an immutable variable
 
 
 # Features
+## Functions
+Functions are declared with the keyword `fn`.
+
+Functions parameters are by default copied by value and immutable.
+
+```
+fn foo(x: i32): () {
+    x + 1; // Error. Can't mutate an immutable variable
+}
+```
+
+
+The below does not create an error, but there is no outside effect, because the parameters is a copy of the original value.
+```
+fn foo(x: mut i32): () {
+    x + 1; 
+}
+```
+
+To actually create the desired effect.
+
+```
+fn foo(x: ref mut i32): () {
+    x + 1; 
+}
+```
 ## Named function parameters
 ```
 
@@ -148,7 +187,35 @@ fn<*> postfix (i32 x, i32 y) -> i32 {
 var x := 10b3;
 ```
 
+## Use keyword
 
+```
+type Person = struct {
+    name: String,
+    age: i32,
+}
+
+fn foo(p: ref Person) {
+    use p;
+    return name;
+}
+```
+
+## Import keyword
+```
+import math;
+
+fn main(): () {
+    var x: i32 = math::sqrt(4);
+}
+```
+```
+import math as *;
+
+fn main(): () {
+    var x: i32 = sqrt(4);
+}
+```
 ## Switch statements
 
 ```
@@ -161,11 +228,58 @@ fn foo(x: i32) -> i32 {
 }
 ```
 ## Complex Types
-### Struct
+The keyword `type` is used to declare a new type.
+
+### Unit Types
+One can also create custom unit types, which are not simply the type `()` or `Void`. Those types don't have any fields.
+```
+type Unit;
+```
+### Product Types
+#### Tuples
+
+Tuples are a special kind of product type. They are a collection of values, which are accessed by index.
+
+nameless and fieldless
+```
+var person := (1, "Mark");
+```
+nameless and fieldful
+```
+var person := (id := 1, name := "Mark");
+var person := (
+    id := 1, 
+    name := "Mark"
+);
+```
+nameful and fieldless
+```
+var x := Point(1, 2.0);
+```
+nameful and fieldful
+```
+var x := (1, 2.0);
+```
+#### Struct
+
+Tuple struct
+```
+type Pair := struct {i32, i32};
+```
+
+Field struct
+```
+type Point := struct {
+    x: i32,
+    y: i32,
+}
+```
 
 ```
 type Person := struct {
+    id: u32,
     age: u32,
+    height: f32,
 };
 
 var person = struct {
@@ -174,10 +288,38 @@ var person = struct {
     .age = 30,
 };
 ```
-### Union
-### C-style Union
 
-### Enum
+```
+type Person := struct{u32, u32, f32};
+```
+### Sum Types
+#### Union
+```
+type Animal := union {
+    Dog,
+    Cat,
+    Fish,
+}
+```
+From a more theoretical point of view, this union consists of three unit types. In pseudo-code, one could thus write:
+```
+type Animal := union {
+    type Dog,
+    type Cat,
+    type Fish,
+}
+```
+
+```
+type Option := union {
+    Some<T>,
+    None,
+}
+```
+#### C-style Union
+
+#### Enum
+Enums function more or less exactly like unions, only that they are more like "named integers" and thus by default have a value. If not specified, the first member is 0 from where it is then incremented.
 ```
 type Color = enum u32 {
     Red,
@@ -185,7 +327,7 @@ type Color = enum u32 {
     Yellow,
 };
 ```
-### Bitmask
+#### Bitmask
 ### Trait
 #### Names for traits in other languages
 Rust: ``trait``
@@ -241,4 +383,8 @@ fn djb2(data: []u8): u32 {
     }
     hash
 }
+
 ```
+
+## Sorting
+### Quicksort

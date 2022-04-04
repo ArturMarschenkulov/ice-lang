@@ -1,0 +1,64 @@
+# LLVM, Google, Chromium, Mozilla, WebKit, Microsoft, GNU
+BasedOnStyle: LLVM
+
+Language: Cpp
+ColumnLimit: 120
+
+MaxEmptyLinesToKeep: 4
+
+
+# Alignment
+PointerAlignment: Left
+AlignConsecutiveDeclarations: Consecutive 
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Right
+
+# Short lines
+AllowShortEnumsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+
+
+
+IndentCaseLabels: true
+
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterControlStatement: MultiLine
+
+
+
+
+# QualifierAlignment: Right
+IndentWidth: 4
+AccessModifierOffset: -4
+IndentAccessModifiers: false
+# IndentRequiresClause: true
+
+
+# IncludeCategories:
+#  - Regex: '.*'
+#    Priority: 1
+#    SortPriority: 10
+
+# IncludeBlocks: Preserve
+
+SortIncludes: false
+
+# Template Stuff
+AlwaysBreakTemplateDeclarations: Yes
+SpaceAfterTemplateKeyword: false
+
+BreakBeforeConceptDeclarations: true
+BreakBeforeTernaryOperators: true
+
+
+AlignAfterOpenBracket: AlwaysBreak
+AlignArrayOfStructures: Right
+
+
+BreakConstructorInitializers: BeforeComma

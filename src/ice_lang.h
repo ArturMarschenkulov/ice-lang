@@ -9,8 +9,9 @@ class IceContext {
         bool print_ast = false;
         bool file_needed = true;
     };
+
 public:
-    auto main(const std::vector<std::string>& cl_args) -> bool;    
-    
+    auto main(const std::vector<std::string>& cl_args) -> bool;
+
     State state;
 };
