@@ -95,6 +95,6 @@ auto IceContext::main(const std::vector<std::string>& cl_args) -> bool {
     }
 
 
-    llvm::LLVMContext TheContext;
+    // llvm::LLVMContext TheContext;
     return true;
 }

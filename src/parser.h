@@ -2,13 +2,14 @@
 
 #include "token.h"
 #include "ast.h"
+#include "misc/option.h"
 
 #include <vector>
 #include <memory>
 #include <iostream>
 #include <string>
 #include <cassert>
-#include <format>
+// #include <format>
 
 
 
@@ -117,19 +118,50 @@ struct TokenCursor {
         return result;
     }
 
+    // auto consume_2(const std::string& s) -> const Option<const Token&> {
+    //     const Token token = this->peek(0);
+    //     const bool  skipped = this->skip_if(s);
+    //     if (skipped) {
+    //         return Option<const Token&>(token);
+    //     } else {
+    //         const Token& tok = this->peek(0);
+    //         auto&        ss = token.span.start;
+    //         std::string  msg = "error: expected \"" + s + "\", but instead found \"" + token.lexeme +
+    //                           "\"\n--><source>:" + std::to_string(ss.line) + ":" + std::to_string(ss.column);
+    //         std::cout << msg << std::endl;
+    //         return Option<const Token&>();
+    //     }
+    // }
+
+    auto c(const std::string& s) -> const Option<Token> {
+        const Token& res = this->peek(0);
+        const bool   skipped = this->skip_if(s);
+        if (false == skipped) {
+            const Token& token = this->peek(0);
+            auto&        ss = token.span.start;
+            std::string  msg = "error: expected \"" + s + "\", but instead found \"" + token.lexeme +
+                              "\"\n--><source>:" + std::to_string(ss.line) + ":" + std::to_string(ss.column);
+            std::cout << msg << std::endl;
+            // result;
+        }
+        return Option<Token>();
+    }
+
     // Returns a pointer to the consumed Token otherwise nullptr
     auto consume(const std::string& s) -> const Token* {
-        const Token& tok = this->peek(0);
-        const Token* result = &tok;
-
+        Option<int>  o;
+        const Token* result = &this->peek(0);
 
         const bool skipped = this->skip_if(s);
         if (false == skipped) {
             const Token& token = this->peek(0);
             auto&        ss = token.span.start;
-            auto         msg = std::format(
-                        "error: expected \"{}\", but instead found \"{}\"\n--><source>:{}:{}", s, token.lexeme, ss.line,
-                        ss.column);
+            // auto         msg = std::format(
+            //             "error: expected \"{}\", but instead found \"{}\"\n--><source>:{}:{}", s, token.lexeme,
+            //             ss.line, ss.column);
+
+            std::string msg = "error: expected \"" + s + "\", but instead found \"" + token.lexeme +
+                              "\"\n--><source>:" + std::to_string(ss.line) + ":" + std::to_string(ss.column);
             std::cout << msg << std::endl;
             result = nullptr;
         }

@@ -1,4 +1,4 @@
-#include "Token.h"
+#include "token.h"
 #include <iostream>
 
 static auto to_string(Token::TYPE token_type) -> std::string {

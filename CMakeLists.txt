@@ -11,7 +11,7 @@ project(
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(BUILD_ARCH "-m64")
-set(TARGET_64 ON)
+# set(BUILD_ARCH "-m64")
+# set(TARGET_64 ON)
 
 add_subdirectory(src)

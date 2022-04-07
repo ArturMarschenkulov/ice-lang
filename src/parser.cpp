@@ -89,6 +89,13 @@ public:
 
 public:
     std::vector<std::string> m_symbols;
+
+    struct {
+        std::string name;
+        std::string type;
+        int         size;
+        int         dimension;
+    };
 };
 SymbolTable g_symbol_table;
 
@@ -143,6 +150,7 @@ static auto get_infix_binding_power(const Token& token) -> BindingPower {
         auto [fl, fr] = get_asso(asso);
         binding_power = {prec - fl * eps, prec + fr * eps};
     }
+    return binding_power;
 }
 
 /*===========================
