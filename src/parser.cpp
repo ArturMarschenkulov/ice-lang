@@ -17,6 +17,39 @@ Grammar notation remainder
 */
 
 /*
+
+literal
+    = literal_numeric
+    | literal_char
+    | ltieral_string
+    | literal_boolean
+
+litera_numeric
+    = (-) literal_integer
+literal_boolean
+    = 'true'
+    | 'false'
+
+literal_integer
+    = literal_integer_binary
+    | literal_integer_octal
+    | literal_integer_decimal
+    | literal_integer_hexadecimal
+
+literal_integer_binary
+    = '0b' binary_digit*
+literal_integer_octal
+    = '0o' octal_digit*
+literal_integer_decimal
+    = '0d' digit*
+literal_integer_hexadecimal
+    = '0x' hexadecimal_digit*
+
+
+
+ */
+
+/*
 stmt_decl_var
     = 'var' ident ':' (type) '=' expr ';'
 
@@ -122,15 +155,17 @@ static auto get_infix_binding_power(const Token& token) -> BindingPower {
     };
 
     auto get_asso = [](ASSOCIATIVITY asso) -> std::pair<float, float> {
+        std::pair<float, float> result = {0, 0};
         switch (asso) {
             case ASSOCIATIVITY::LEFT: {
-                return {1.0f, 0.0f};
+                result = {1.0f, 0.0f};
             } break;
             case ASSOCIATIVITY::RIGHT: {
-                return {0.0f, 1.0f};
+                result = {0.0f, 1.0f};
             } break;
-            default: assert(false);
+            default: assert(false && "invalid associativity");
         }
+        return result;
     };
 
     BindingPower binding_power;
@@ -179,10 +214,10 @@ static auto parse_expr_variable(Parser* self) -> std::unique_ptr<Expr> {
 
 static auto parse_expr_grouping(Parser* self) -> std::unique_ptr<Expr> {
     std::unique_ptr<Expr> expr;
-    self->m_tc.consume("(");
+    self->m_tc.consume(Token("("));
     expr = parse_expr(self);
     // self->m_tc.consume
-    if (self->m_tc.peek(0).lexeme == ")") {
+    if (self->m_tc.peek(0) == Token(")")) {
         self->m_tc.advance();
         expr = std::make_unique<ExprGrouping>(std::move(expr));
     } else {
@@ -195,18 +230,18 @@ static auto parse_expr_block(Parser* self) -> std::unique_ptr<Expr> {
     auto should_add = [](Parser* self) -> bool {
         int  n = 0;
         auto token = self->m_tc.peek(n);
-        while (token.lexeme != "}") {
-            if (token.lexeme == ";") { return true; }
+        while (token != Token("}")) {
+            if (token == Token(";")) { return true; }
             n += 1;
             token = self->m_tc.peek(n);
         }
         return false;
     };
-    assert(self->m_tc.peek(0).lexeme == "{");
-    self->m_tc.consume("{");
+    assert(self->m_tc.peek(0) == Token("{") && "expected {");
+    self->m_tc.consume(Token("{"));
 
     std::vector<std::unique_ptr<Stmt>> statements;
-    while (self->m_tc.peek(0).lexeme != "}") {
+    while (self->m_tc.peek(0) != Token("}")) {
         if (self->m_tc.is_at_end()) { break; }
 
         if (should_add(self)) {
@@ -217,14 +252,14 @@ static auto parse_expr_block(Parser* self) -> std::unique_ptr<Expr> {
     }
 
     std::unique_ptr<Expr> optional_expr;
-    if (self->m_tc.peek(0).lexeme == "}") {
+    if (self->m_tc.peek(0) == Token("}")) {
         optional_expr = nullptr;
     } else {
         optional_expr = parse_expr(self);
     }
 
     auto expr = std::make_unique<ExprBlock>(std::move(statements), std::move(optional_expr));
-    self->m_tc.consume("}");
+    self->m_tc.consume(Token("}"));
     return expr;
 }
 
@@ -237,9 +272,9 @@ static auto parse_expr_primary(Parser* self) -> std::unique_ptr<Expr> {
         expr = parse_expr_literal(self);
     } else if (self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER) {
         expr = parse_expr_variable(self);
-    } else if (self->m_tc.peek(0).lexeme == "(") {
+    } else if (self->m_tc.peek(0) == Token("(")) {
         expr = parse_expr_grouping(self);
-    } else if (self->m_tc.peek(0).lexeme == "{") {
+    } else if (self->m_tc.peek(0) == Token("{")) {
         expr = parse_expr_block(self);
     }
 
@@ -275,7 +310,7 @@ static auto parse_expr_unary_prefix(Parser* self) -> std::unique_ptr<Expr> {
             std::unique_ptr<Expr> inside = parse_expr_unary_postfix(self);
             expr = std::make_unique<ExprUnaryPrefix>(op, std::move(inside));
         } else {
-            assert(false);
+            assert(false && "not a prefix operator");
         }
     } else {
         expr = parse_expr_unary_postfix(self);
@@ -317,19 +352,19 @@ static auto parse_expr(Parser* self) -> std::unique_ptr<Expr> {
 ===========================*/
 
 static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
-    self->m_tc.consume("var");
+    self->m_tc.consume(Token("var"));
 
     Token ident = self->m_tc.peek(0); // peek identifier
     if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
-        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER);
+        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER && "expected identifier");
     }
 
-    self->m_tc.consume(":=");
+    self->m_tc.consume(Token(":="));
 
     std::unique_ptr<Expr> expr = parse_expr(self);
     std::unique_ptr<Stmt> stmt = std::make_unique<StmtDeclVar>(ident, std::move(expr));
 
-    self->m_tc.consume(";");
+    self->m_tc.consume(Token(";"));
 
     if (g_symbol_table.contains(ident.lexeme) == true) {
         // TODO: Made here an error? Multiple declaration
@@ -340,22 +375,22 @@ static auto parse_stmt_decl_var(Parser* self) -> std::unique_ptr<Stmt> {
     return stmt;
 }
 static auto parse_stmt_decl_fn(Parser* self) -> std::unique_ptr<Stmt> {
-    self->m_tc.consume("fn");
+    self->m_tc.consume(Token("fn"));
 
     Token ident = self->m_tc.peek(0); // peek identifier
     if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
-        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER);
+        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER && "expected identifier");
     }
 
-    self->m_tc.consume("(");
-    self->m_tc.consume(")");
+    self->m_tc.consume(Token("("));
+    self->m_tc.consume(Token(")"));
 
-    self->m_tc.consume(":");
+    self->m_tc.consume(Token(":"));
     if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
-        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER);
+        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER && "expected identifier");
     }
-    self->m_tc.consume("{");
-    self->m_tc.consume("}");
+    self->m_tc.consume(Token("{"));
+    self->m_tc.consume(Token("}"));
     return nullptr;
 }
 static auto parse_stmt(Parser* self) -> std::unique_ptr<Stmt> {

@@ -3,98 +3,7 @@
 #include <cassert>
 #include <algorithm>
 
-static auto is_digit(const char c) -> bool { return c >= '0' && c <= '9'; }
-static auto is_binary_digit(const char c) -> bool { return c >= '0' && c <= '1'; }
-static auto is_octal_digit(const char c) -> bool { return c >= '0' && c <= '7'; }
-static auto is_hexadecimal_digit(const char c) -> bool {
-    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-}
-static auto is_alpha(const char c) -> bool { return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_'; }
-static auto is_alpha_numeric(const char c) -> bool { return is_alpha(c) || is_digit(c); }
 
-static auto is_punctuator(const char c) -> bool {
-
-    switch (c) {
-        case '+': return true;
-    }
-    if (c == '+') {}
-    bool result = false;
-    switch (c) {
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-
-        case '&':
-        case '!':
-        case '|':
-        case '=':
-        case '<':
-        case '>':
-        case '.':
-        case ',':
-        case ':':
-        case ';':
-
-        case '#':
-        case '?':
-        case '@':
-        case '$':
-        case '~':
-
-        case '(':
-        case ')':
-        case '[':
-        case ']':
-        case '{':
-        case '}': result = true; break;
-        default: result = false; break;
-    }
-    return result;
-}
-
-
-static auto is_potential_operator(const Token& token) -> bool {
-    /*
-            NOTE: Swift does not allow those following tokens to be in custom operators or overloadable
-            "(", ")", "{", "}", "[", "]", ".", ",", ":", ";", "=", "@", "#", "&" (as a prefix operator), "->", "`", "?",
-       and "!" (as a postfix operator).
-    */
-    if (token.type == Token::TYPE::S_PUNCTUATOR) {
-        std::vector<std::string> not_potential_operator = {"(", ")", "{", "}", "[", "]", ",", ".", ";"};
-        bool                     result = !std::any_of(
-                                not_potential_operator.cbegin(), not_potential_operator.cend(),
-                                [&token](const std::string& s) { return token.lexeme == s; });
-
-        return result;
-    }
-    return false;
-}
-
-static auto is_skip_token(const Token& token) -> bool {
-    switch (token.type) {
-        case Token::TYPE::SKW_WHITESPACE:
-        case Token::TYPE::SKW_NEWLINE:
-        case Token::TYPE::SKW_COMMENT: return true;
-        default: return false;
-    }
-}
-static auto can_be_multichar_punctuator(const char c) -> bool {
-    bool result;
-    switch (c) {
-        case ';':
-        case '[':
-        case ']':
-        case '(':
-        case ')':
-        case '{':
-        case '}': {
-            result = false;
-        } break;
-        default: result = true; break;
-    }
-    return result;
-}
 static auto is_left_bound(const CharCursor& cur) -> bool {
     bool result;
     // if (tok_begin == buffer_begin) return false;
@@ -413,6 +322,14 @@ auto Tokenizer::lex_char(CharCursor& current_cursor) const -> const Token::TYPE 
 
 
 auto CharCursor::get() const -> const char* { return m_it; }
+auto CharCursor::get_() const -> Option<const char&> {
+    if (*m_it != '\0') {
+        return {};
+    } else {
+        return Option<const char&>(*m_it);
+    }
+}
+
 auto CharCursor::advance() const -> void {
     m_it++;
     m_loc.column++;
@@ -423,3 +340,10 @@ auto CharCursor::new_line() const -> void {
     m_loc.column = 0;
 }
 auto CharCursor::peek(int n) const -> const char { return *(m_it + n); }
+auto CharCursor::peek_(int n) const -> Option<const char&> {
+    if (*(m_it + n) != '\0') {
+        return Option<const char&>();
+    } else {
+        return Option<const char&>(*(m_it + n));
+    }
+}

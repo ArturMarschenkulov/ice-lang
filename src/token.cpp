@@ -1,5 +1,9 @@
 #include "token.h"
 #include <iostream>
+#include <vector>
+#include <algorithm>
+
+
 
 static auto to_string(Token::TYPE token_type) -> std::string {
     switch (token_type) {

@@ -84,6 +84,10 @@ struct TokenCursor {
         m_it++;
         return tok;
     }
+    auto peek_(int n) const -> Option<const Token&> {
+        // if (m_it + n >= m_tokens.end()) { return Option<const Token&>(); }
+        return {*(m_it + n)};
+    }
     auto peek(int n) const -> const Token& { return *(m_it + n); }
     auto is_at_end() const -> bool { return this->peek(0).type == Token::TYPE::SKW_EOF; }
 
@@ -133,23 +137,45 @@ struct TokenCursor {
     //     }
     // }
 
-    auto c(const std::string& s) -> const Option<Token> {
-        const Token& res = this->peek(0);
-        const bool   skipped = this->skip_if(s);
+    // auto c(const std::string& s) -> const Option<Token> {
+    //     const Token& res = this->peek(0);
+    //     const bool   skipped = this->skip_if(s);
+    //     if (false == skipped) {
+    //         const Token& token = this->peek(0);
+    //         auto&        ss = token.span.start;
+    //         std::string  msg = "error: expected \"" + s + "\", but instead found \"" + token.lexeme +
+    //                           "\"\n--><source>:" + std::to_string(ss.line) + ":" + std::to_string(ss.column);
+    //         std::cout << msg << std::endl;
+    //         // result;
+    //     }
+    //     return Option<Token>();
+    // }
+
+
+    // Consumes the token, meaning it moves the cursor forward if it is the token provided.
+    // That consumed token is returned as an lvalue ref Option.
+    // If the token is not the one provided, then the cursor is not moved and the Option is empty.
+    auto consume(const Token& token) -> Option<const Token&> {
+        const Token& result = this->peek(0);
+        const bool   skipped = this->skip_if(token.lexeme);
+
+        bool to_print_error = false;
+
+        // print error
+        // TODO: Try to somehow extract it out of this function. Maybe Result type?
         if (false == skipped) {
-            const Token& token = this->peek(0);
-            auto&        ss = token.span.start;
-            std::string  msg = "error: expected \"" + s + "\", but instead found \"" + token.lexeme +
+            const Token& tok = this->peek(0);
+            auto&        ss = tok.span.start;
+
+            std::string msg = "error: expected \"" + tok.lexeme + "\", but instead found \"" + tok.lexeme +
                               "\"\n--><source>:" + std::to_string(ss.line) + ":" + std::to_string(ss.column);
             std::cout << msg << std::endl;
-            // result;
+            return Option<const Token&>();
         }
-        return Option<Token>();
+        return result;
     }
-
     // Returns a pointer to the consumed Token otherwise nullptr
-    auto consume(const std::string& s) -> const Token* {
-        Option<int>  o;
+    auto consume__(const std::string& s) -> const Token* {
         const Token* result = &this->peek(0);
 
         const bool skipped = this->skip_if(s);
@@ -170,7 +196,9 @@ struct TokenCursor {
     }
 
 private:
-    mutable const Token* m_it;
+    mutable const Token*     m_it;
+    int                      token_index = 0;
+    const std::vector<Token> m_tokens;
     // Location m_loc;
 };
 

@@ -4,6 +4,9 @@
 #include "parser.h"
 #include "ast_printer.h"
 
+#include "misc/result.h"
+#include "3rd-party/result.hpp"
+
 #include "llvm/IR/LLVMContext.h"
 
 #include <iostream>
@@ -14,21 +17,53 @@
 
 static auto contains_flags(const std::vector<std::string>& cl_args) -> bool {
     bool result = false;
+
+    std::vector<std::string> flags;
     for (size_t i = 1; i < cl_args.size(); i++) {
         // Since options usually begin with an "-" or "--"
-        if ('-' == cl_args[i][0]) { result = true; }
+        if ('-' == cl_args[i][0]) {
+            result = true;
+            flags.push_back(cl_args[i]);
+        }
     }
+
+
+    if (result == true) {
+        std::vector<const char*> valid_flags = {
+            "--version", "-v", "--help", "--print-ast", "--print-token",
+        };
+        // Check whether those flags are valid
+        bool is_valid = false;
+        for (size_t i = 0; i < flags.size(); i++) {
+            for (size_t j = 0; j < valid_flags.size(); j++) {
+                if (flags[i] == valid_flags[j]) { is_valid = true; }
+            }
+            if (is_valid == false) {
+                std::cout << "ice-lang: error: unrecognized command-line option '" << flags[i] << "'\n";
+            }
+        }
+    }
+
     return result;
 }
 static auto handle_flags(const std::vector<std::string>& cl_args, IceContext* ctx) -> void {
+    std::vector<const char*> options = {
+        "--version",
+        "--help",
+        "--print-ast",
+        "--print-token",
+    };
+
+    // Check whether cl_args is in options
+
 
     for (auto& arg : cl_args) {
         if ("-v" == arg || "--version" == arg) {
             ctx->state.file_needed = false;
             std::cout << "version 0.0" << std::endl;
-        } else if ("--print-ast") {
+        } else if ("--print-ast" == arg) {
             ctx->state.print_ast = true;
-        } else if ("--print-token") {
+        } else if ("--print-token" == arg) {
             ctx->state.print_token_stream = true;
         }
     }
@@ -39,14 +74,15 @@ static auto to_string(const std::ostream& file) -> std::string {
     return ss.str();
 }
 
+
 auto IceContext::main(const std::vector<std::string>& cl_args) -> bool {
+
 
     if (cl_args.size() < 1) {
         // This should never be reached
         assert(("there is an error", false));
     } else if (cl_args.size() == 1) {
         std::cout << "ice-lang: error: no input files" << std::endl;
-
     } else if (cl_args.size() > 1) {
         const bool print_args = true;
         if (true == print_args) {

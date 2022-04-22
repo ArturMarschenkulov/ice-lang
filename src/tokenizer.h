@@ -1,6 +1,7 @@
 #pragma once
 
 #include "token.h"
+#include "misc/option.h"
 
 #include <map>
 #include <string>
@@ -19,10 +20,12 @@ public:
         return *this;
     }
     auto get() const -> const char*;
+    auto get_() const -> Option<const char&>;
     auto advance() const -> void;
     auto new_line() const -> void;
 
     auto peek(int n) const -> const char;
+    auto peek_(int n) const -> Option<const char&>;
 
 public:
     mutable const char* m_it;
