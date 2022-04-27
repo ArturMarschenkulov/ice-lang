@@ -50,6 +50,17 @@ literal_integer_hexadecimal
  */
 
 /*
+file
+    = (stmt)*
+
+
+stmt_decl_type
+    = 'type' ident '=' struct '{'(ident ':' type (',' ident 'i' type)*)'}'
+
+
+stmt
+    = stmt_decl_var
+    | stmt_decl_fn
 stmt_decl_var
     = 'var' ident ':' (type) '=' expr ';'
 
@@ -57,9 +68,10 @@ stmt_decl_fn
     = 'fn' ident '(' (ident ':' type (',' ident ':' type)*)? ')' ':' type '{' stmt* '}'
     | 'fn' ident '(' ')' ':' type '{' '}'
 
-stmt
-    = stmt_decl_var
-    | stmt_decl_fn
+
+
+
+
 
 expr
     = expr_prefix (expr_binary)
@@ -107,6 +119,11 @@ expr_bin
 
 stmt
         = expr ';'
+*/
+
+/*
+NOTES:
+Things like `var a, b: i32 = 1, 2;` are not allowed.
 */
 
 class SymbolTable {
@@ -383,47 +400,90 @@ static auto parse_stmt_decl_fn(Parser* self) -> std::unique_ptr<Stmt> {
     }
 
     self->m_tc.consume(Token("("));
-    self->m_tc.consume(Token(")"));
+    if (self->m_tc.peek(0) != Token(")")) {
+        while (true) {
 
-    self->m_tc.consume(Token(":"));
-    if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
-        assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER && "expected identifier");
-    }
-    self->m_tc.consume(Token("{"));
-    self->m_tc.consume(Token("}"));
-    return nullptr;
-}
-static auto parse_stmt(Parser* self) -> std::unique_ptr<Stmt> {
-    std::unique_ptr<Stmt> stmt;
-
-    auto kw = self->m_tc.peek(0).type;
-    if (kw == Token::TYPE::KW_VAR) {
-        stmt = parse_stmt_decl_var(self);
-    } else if (self->m_tc.peek(0).type == Token::TYPE::KW_FN) {
-        stmt = parse_stmt_decl_fn(self);
-    } else {
-        std::unique_ptr<Expr> expr = parse_expr(self);
-        if (self->m_tc.peek(0).lexeme == ";") {
-            self->m_tc.advance();
-            stmt = std::make_unique<StmtExpression>(std::move(expr));
-        } else {
-            self->m_tc.expect(";");
+            if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {}
+            if (false == self->m_tc.skip_if(Token(":"))) {}
+            if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {}
         }
+        self->m_tc.consume(Token(")"));
+
+        self->m_tc.consume(Token(":"));
+        if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
+            assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER && "expected identifier");
+        }
+        self->m_tc.consume(Token("{"));
+        self->m_tc.consume(Token("}"));
+        return nullptr;
     }
-    return stmt;
-}
+    static auto parse_stmt_decl_type(Parser * self)->std::unique_ptr<Stmt> {
+        self->m_tc.consume(Token("type"));
 
-auto Parser::parse_tokens(const std::vector<Token>& tokens) -> std::vector<std::unique_ptr<Stmt>> {
-    m_tc = {tokens};
+        Token ident = self->m_tc.peek(0); // peek identifier
+        if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
+            assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER && "expected identifier");
+        }
+        if (self->m_tc.peek(0) == Token(";")) {
+            self->m_tc.consume(Token(";"));
+            return std::make_unique<StmtDeclTypeUnit>(ident);
+        }
 
-    std::vector<std::unique_ptr<Stmt>> stmts;
-    while (true) {
-        std::unique_ptr<Stmt> stmt = parse_stmt(this);
-        stmts.emplace_back(std::move(stmt));
-        // m_tc.advance();
+        self->m_tc.consume(Token("="));
 
-        if (m_tc.peek(0).type == Token::TYPE::SKW_EOF) { break; }
+        Token type = self->m_tc.peek(0); // peek identifier
+        if (false == self->m_tc.skip_if(Token::TYPE::S_IDENTIFIER)) {
+            assert(self->m_tc.peek(0).type == Token::TYPE::S_IDENTIFIER && "expected identifier");
+        }
+
+        self->m_tc.consume(Token(";"));
+
+        return nullptr;
     }
 
-    return stmts;
-}
+    static auto parse_item(Parser * self)->std::unique_ptr<Stmt> {
+        std::unique_ptr<Stmt> stmt;
+        if (self->m_tc.peek(0) == Token("fn")) {
+            stmt = parse_stmt_decl_fn(self);
+        } else if (self->m_tc.peek(0) == Token("type")) {
+            stmt = parse_stmt_decl_type(self);
+        } else {
+            assert(false && "expected statement");
+        }
+        return stmt;
+    }
+    static auto parse_stmt(Parser * self)->std::unique_ptr<Stmt> {
+        std::unique_ptr<Stmt> stmt;
+
+        auto kw = self->m_tc.peek(0).type;
+        if (kw == Token::TYPE::KW_VAR) {
+            stmt = parse_stmt_decl_var(self);
+        } else if (self->m_tc.peek(0).type == Token::TYPE::KW_FN) {
+            stmt = parse_stmt_decl_fn(self);
+        } else {
+            std::unique_ptr<Expr> expr = parse_expr(self);
+            if (self->m_tc.peek(0).lexeme == ";") {
+                self->m_tc.advance();
+                stmt = std::make_unique<StmtExpression>(std::move(expr));
+            } else {
+                self->m_tc.expect(";");
+            }
+        }
+        return stmt;
+    }
+    // This basically gets the file as input and parses it
+    // TODO: Maybe change the name of this function
+    auto Parser::parse_tokens(const std::vector<Token>& tokens)->std::vector<std::unique_ptr<Stmt>> {
+        m_tc = {tokens};
+
+        std::vector<std::unique_ptr<Stmt>> stmts;
+        while (true) {
+            std::unique_ptr<Stmt> stmt = parse_stmt(this);
+            stmts.emplace_back(std::move(stmt));
+            // m_tc.advance();
+
+            if (m_tc.peek(0).type == Token::TYPE::SKW_EOF) { break; }
+        }
+
+        return stmts;
+    }

@@ -169,6 +169,24 @@ public:
         indent_level--;
     }
     virtual auto visit(const StmtDeclFn& expr) -> void override {
+        std::string indent_str = get_indent();
+        stream << indent_str;
+        stream << "StmtDeclFn " << expr.m_ident << "\n";
+        indent_level--;
+        // TODO: implement!
+    }
+    virtual auto visit(const StmtDeclTypeUnit& stmt) -> void override {
+        std::string indent_str = get_indent();
+        stream << indent_str;
+        stream << "StmtDeclTypeUnit " << stmt.m_ident << "\n";
+        indent_level--;
+        // TODO: implement!
+    }
+    virtual auto visit(const StmtDeclTypeStruct& stmt) -> void override {
+        std::string indent_str = get_indent();
+        stream << indent_str;
+        stream << "StmtDeclTypeUnit " << stmt.m_ident << "\n";
+        indent_level--;
         // TODO: implement!
     }
 

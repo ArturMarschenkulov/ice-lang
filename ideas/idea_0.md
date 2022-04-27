@@ -263,12 +263,14 @@ var x := (1, 2.0);
 #### Struct
 
 Tuple struct
+```rust
+type Pair = struct {i32, i32};
 ```
-type Pair := struct {i32, i32};
-```
+This is basically another way to declare a named tuple. Or more like a named tuple is the shorthand notation for this kind of struct.
+Maybe do not include this into the language as it is superfluous.
 
 Field struct
-```
+```rust
 type Point := struct {
     x: i32,
     y: i32,
@@ -294,15 +296,15 @@ type Person := struct{u32, u32, f32};
 ```
 ### Sum Types
 #### Union
-```
-type Animal := union {
+```rust
+type Animal = union {
     Dog,
     Cat,
     Fish,
 }
 ```
 From a more theoretical point of view, this union consists of three unit types. In pseudo-code, one could thus write:
-```
+```rust
 type Animal := union {
     type Dog,
     type Cat,
@@ -310,8 +312,8 @@ type Animal := union {
 }
 ```
 
-```
-type Option := union {
+```rust
+type Option<T> := union {
     Some<T>,
     None,
 }

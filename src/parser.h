@@ -113,6 +113,14 @@ struct TokenCursor {
         }
         return result;
     }
+    auto skip_if(const Token& token) -> bool {
+        bool result = false;
+        if (token == this->peek(0)) {
+            result = true;
+            this->advance();
+        }
+        return result;
+    }
     auto skip_if(const std::string& s) -> bool {
         bool result = false;
         if (s == this->peek(0).lexeme) {

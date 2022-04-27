@@ -33,6 +33,9 @@ public:
 class StmtExpression;
 class StmtDeclVar;
 class StmtDeclFn;
+class StmtDeclTypeUnit;
+class StmtDeclTypeStruct;
+
 
 class Stmt {
 public:
@@ -42,7 +45,11 @@ public:
     public:
         virtual auto visit(const StmtExpression& expr) -> void = 0;
         virtual auto visit(const StmtDeclVar& expr) -> void = 0;
+
         virtual auto visit(const StmtDeclFn& expr) -> void = 0;
+
+        virtual auto visit(const StmtDeclTypeUnit& expr) -> void = 0;
+        virtual auto visit(const StmtDeclTypeStruct& expr) -> void = 0;
     };
     virtual auto accept(Visitor&) const -> void = 0;
 };
@@ -158,4 +165,25 @@ public:
 
     Token                 m_ident;
     std::unique_ptr<Expr> m_expr;
+};
+
+class StmtDeclTypeUnit : public Stmt {
+public:
+    StmtDeclTypeUnit(Token ident)
+        : m_ident(std::move(ident)) {}
+    auto accept(Visitor& visitor) const -> void override { visitor.visit(*this); }
+
+    Token m_ident;
+};
+
+class StmtDeclTypeStruct : public Stmt {
+public:
+    StmtDeclTypeStruct(Token ident, std::vector<std::unique_ptr<StmtDeclVar>> fields)
+        : m_ident(std::move(ident))
+        , m_fields(std::move(fields)) {}
+
+    auto accept(Visitor& visitor) const -> void override { visitor.visit(*this); }
+
+    Token                                     m_ident;
+    std::vector<std::unique_ptr<StmtDeclVar>> m_fields;
 };

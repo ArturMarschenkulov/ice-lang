@@ -137,7 +137,9 @@ public:
                 case ']':
                 case '{':
                 case '}':
-                case ';': result = TYPE::S_PUNCTUATOR; break;
+                case ';':
+                case ':':
+                case ',': result = TYPE::S_PUNCTUATOR; break;
                 default: std::cout << str[0] << std::endl; assert(false && "Invalid punctuator: ");
             }
         }

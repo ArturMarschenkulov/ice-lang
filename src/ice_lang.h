@@ -13,5 +13,6 @@ class IceContext {
 public:
     auto main(const std::vector<std::string>& cl_args) -> bool;
 
-    State state;
+    State                    state;
+    std::vector<std::string> m_arguments;
 };
